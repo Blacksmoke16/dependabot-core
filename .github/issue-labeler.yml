@@ -63,3 +63,6 @@
 
 "L: helm":
     - '(helm)'
+
+"L: crystal:shards":
+    - '(crystal|shards)'

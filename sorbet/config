@@ -35,4 +35,5 @@
 --ignore=updater/spec/
 --ignore=uv/spec/
 --ignore=vcpkg/spec/
+--ignore=shards/spec/
 --ignore=.git

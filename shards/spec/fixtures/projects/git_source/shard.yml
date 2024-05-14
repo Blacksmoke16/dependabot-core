@@ -1,0 +1,6 @@
+name: shards
+version: 0.1.0
+
+dependencies:
+  geoffrey:
+    git: https://codeberg.org/skinnyjames/geoffrey.git

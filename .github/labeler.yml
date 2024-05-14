@@ -95,3 +95,7 @@
 "L: cpp:vcpkg":
 - changed-files:
   - any-glob-to-any-file: vcpkg/**
+
+"L: crystal":
+- changed-files:
+  - any-glob-to-any-file: shards/**

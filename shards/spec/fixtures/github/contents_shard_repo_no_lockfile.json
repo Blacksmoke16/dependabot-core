@@ -1,0 +1,370 @@
+[
+  {
+    "name": ".circleci",
+    "path": ".circleci",
+    "sha": "9ed72de1910662af453687b6eac9b6535564a4ec",
+    "size": 0,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/.circleci?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/tree/master/.circleci",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/trees/9ed72de1910662af453687b6eac9b6535564a4ec",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/.circleci?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/trees/9ed72de1910662af453687b6eac9b6535564a4ec",
+      "html": "https://github.com/crystal-lang/shards/tree/master/.circleci"
+    }
+  },
+  {
+    "name": ".envrc",
+    "path": ".envrc",
+    "sha": "5bf8fc159db004f9bcd400eb837ea3a9f78165f0",
+    "size": 176,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/.envrc?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/blob/master/.envrc",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/blobs/5bf8fc159db004f9bcd400eb837ea3a9f78165f0",
+    "download_url": "https://raw.githubusercontent.com/crystal-lang/shards/master/.envrc",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/.envrc?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/blobs/5bf8fc159db004f9bcd400eb837ea3a9f78165f0",
+      "html": "https://github.com/crystal-lang/shards/blob/master/.envrc"
+    }
+  },
+  {
+    "name": ".gitattributes",
+    "path": ".gitattributes",
+    "sha": "610b277c57355271a19b6e818e653e7aec169ad2",
+    "size": 94,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/.gitattributes?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/blob/master/.gitattributes",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/blobs/610b277c57355271a19b6e818e653e7aec169ad2",
+    "download_url": "https://raw.githubusercontent.com/crystal-lang/shards/master/.gitattributes",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/.gitattributes?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/blobs/610b277c57355271a19b6e818e653e7aec169ad2",
+      "html": "https://github.com/crystal-lang/shards/blob/master/.gitattributes"
+    }
+  },
+  {
+    "name": ".github",
+    "path": ".github",
+    "sha": "f05b0786b71724b92113ea06419d001a59b785d0",
+    "size": 0,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/.github?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/tree/master/.github",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/trees/f05b0786b71724b92113ea06419d001a59b785d0",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/.github?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/trees/f05b0786b71724b92113ea06419d001a59b785d0",
+      "html": "https://github.com/crystal-lang/shards/tree/master/.github"
+    }
+  },
+  {
+    "name": ".gitignore",
+    "path": ".gitignore",
+    "sha": "e50b04af6cbf97be627472c5e0c2c6cdda08221d",
+    "size": 245,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/.gitignore?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/blob/master/.gitignore",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/blobs/e50b04af6cbf97be627472c5e0c2c6cdda08221d",
+    "download_url": "https://raw.githubusercontent.com/crystal-lang/shards/master/.gitignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/.gitignore?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/blobs/e50b04af6cbf97be627472c5e0c2c6cdda08221d",
+      "html": "https://github.com/crystal-lang/shards/blob/master/.gitignore"
+    }
+  },
+  {
+    "name": "CHANGELOG.md",
+    "path": "CHANGELOG.md",
+    "sha": "753b67341c248556ba7e1d0f0725cda75adb14a7",
+    "size": 28864,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/CHANGELOG.md?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/blob/master/CHANGELOG.md",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/blobs/753b67341c248556ba7e1d0f0725cda75adb14a7",
+    "download_url": "https://raw.githubusercontent.com/crystal-lang/shards/master/CHANGELOG.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/CHANGELOG.md?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/blobs/753b67341c248556ba7e1d0f0725cda75adb14a7",
+      "html": "https://github.com/crystal-lang/shards/blob/master/CHANGELOG.md"
+    }
+  },
+  {
+    "name": "LICENSE",
+    "path": "LICENSE",
+    "sha": "5cbba9c56c4432a2044adf159ff273314a173af7",
+    "size": 558,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/LICENSE?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/blob/master/LICENSE",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/blobs/5cbba9c56c4432a2044adf159ff273314a173af7",
+    "download_url": "https://raw.githubusercontent.com/crystal-lang/shards/master/LICENSE",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/LICENSE?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/blobs/5cbba9c56c4432a2044adf159ff273314a173af7",
+      "html": "https://github.com/crystal-lang/shards/blob/master/LICENSE"
+    }
+  },
+  {
+    "name": "Makefile",
+    "path": "Makefile",
+    "sha": "6316199944d8a1d1afd9a0eca918fc98377c9951",
+    "size": 3785,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/Makefile?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/blob/master/Makefile",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/blobs/6316199944d8a1d1afd9a0eca918fc98377c9951",
+    "download_url": "https://raw.githubusercontent.com/crystal-lang/shards/master/Makefile",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/Makefile?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/blobs/6316199944d8a1d1afd9a0eca918fc98377c9951",
+      "html": "https://github.com/crystal-lang/shards/blob/master/Makefile"
+    }
+  },
+  {
+    "name": "Makefile.win",
+    "path": "Makefile.win",
+    "sha": "f5900d114d32dbdf2aab3c85f01bb54ed2f55696",
+    "size": 4065,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/Makefile.win?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/blob/master/Makefile.win",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/blobs/f5900d114d32dbdf2aab3c85f01bb54ed2f55696",
+    "download_url": "https://raw.githubusercontent.com/crystal-lang/shards/master/Makefile.win",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/Makefile.win?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/blobs/f5900d114d32dbdf2aab3c85f01bb54ed2f55696",
+      "html": "https://github.com/crystal-lang/shards/blob/master/Makefile.win"
+    }
+  },
+  {
+    "name": "README.md",
+    "path": "README.md",
+    "sha": "5a05c30a908743c59ee095db06cc5bbfb5fbe8f3",
+    "size": 4259,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/README.md?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/blob/master/README.md",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/blobs/5a05c30a908743c59ee095db06cc5bbfb5fbe8f3",
+    "download_url": "https://raw.githubusercontent.com/crystal-lang/shards/master/README.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/README.md?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/blobs/5a05c30a908743c59ee095db06cc5bbfb5fbe8f3",
+      "html": "https://github.com/crystal-lang/shards/blob/master/README.md"
+    }
+  },
+  {
+    "name": "SPEC.md",
+    "path": "SPEC.md",
+    "sha": "11c04c9d0d4a3d331c77d173b02bc0ac6a241b8d",
+    "size": 93,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/SPEC.md?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/blob/master/SPEC.md",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/blobs/11c04c9d0d4a3d331c77d173b02bc0ac6a241b8d",
+    "download_url": "https://raw.githubusercontent.com/crystal-lang/shards/master/SPEC.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/SPEC.md?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/blobs/11c04c9d0d4a3d331c77d173b02bc0ac6a241b8d",
+      "html": "https://github.com/crystal-lang/shards/blob/master/SPEC.md"
+    }
+  },
+  {
+    "name": "VERSION",
+    "path": "VERSION",
+    "sha": "66333910a4beec729370ff97e5044b345383eba4",
+    "size": 7,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/VERSION?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/blob/master/VERSION",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/blobs/66333910a4beec729370ff97e5044b345383eba4",
+    "download_url": "https://raw.githubusercontent.com/crystal-lang/shards/master/VERSION",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/VERSION?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/blobs/66333910a4beec729370ff97e5044b345383eba4",
+      "html": "https://github.com/crystal-lang/shards/blob/master/VERSION"
+    }
+  },
+  {
+    "name": "bin",
+    "path": "bin",
+    "sha": "29a422c19251aeaeb907175e9b3219a9bed6c616",
+    "size": 0,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/bin?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/tree/master/bin",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/trees/29a422c19251aeaeb907175e9b3219a9bed6c616",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/bin?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/trees/29a422c19251aeaeb907175e9b3219a9bed6c616",
+      "html": "https://github.com/crystal-lang/shards/tree/master/bin"
+    }
+  },
+  {
+    "name": "devenv.lock",
+    "path": "devenv.lock",
+    "sha": "01beaf6638dbf0a6f288f216ba1f022aaf5738e7",
+    "size": 4028,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/devenv.lock?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/blob/master/devenv.lock",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/blobs/01beaf6638dbf0a6f288f216ba1f022aaf5738e7",
+    "download_url": "https://raw.githubusercontent.com/crystal-lang/shards/master/devenv.lock",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/devenv.lock?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/blobs/01beaf6638dbf0a6f288f216ba1f022aaf5738e7",
+      "html": "https://github.com/crystal-lang/shards/blob/master/devenv.lock"
+    }
+  },
+  {
+    "name": "devenv.nix",
+    "path": "devenv.nix",
+    "sha": "6cedc28fd8734e9fcf6b32e0a79ad512440c4c23",
+    "size": 409,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/devenv.nix?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/blob/master/devenv.nix",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/blobs/6cedc28fd8734e9fcf6b32e0a79ad512440c4c23",
+    "download_url": "https://raw.githubusercontent.com/crystal-lang/shards/master/devenv.nix",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/devenv.nix?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/blobs/6cedc28fd8734e9fcf6b32e0a79ad512440c4c23",
+      "html": "https://github.com/crystal-lang/shards/blob/master/devenv.nix"
+    }
+  },
+  {
+    "name": "devenv.yaml",
+    "path": "devenv.yaml",
+    "sha": "2457af5d1ba11d30afe0d91b98232f9c9830568a",
+    "size": 341,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/devenv.yaml?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/blob/master/devenv.yaml",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/blobs/2457af5d1ba11d30afe0d91b98232f9c9830568a",
+    "download_url": "https://raw.githubusercontent.com/crystal-lang/shards/master/devenv.yaml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/devenv.yaml?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/blobs/2457af5d1ba11d30afe0d91b98232f9c9830568a",
+      "html": "https://github.com/crystal-lang/shards/blob/master/devenv.yaml"
+    }
+  },
+  {
+    "name": "docs.mk",
+    "path": "docs.mk",
+    "sha": "554440fe6ba4ad395de3e5741e1a10e66f95d77f",
+    "size": 1012,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/docs.mk?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/blob/master/docs.mk",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/blobs/554440fe6ba4ad395de3e5741e1a10e66f95d77f",
+    "download_url": "https://raw.githubusercontent.com/crystal-lang/shards/master/docs.mk",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/docs.mk?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/blobs/554440fe6ba4ad395de3e5741e1a10e66f95d77f",
+      "html": "https://github.com/crystal-lang/shards/blob/master/docs.mk"
+    }
+  },
+  {
+    "name": "docs",
+    "path": "docs",
+    "sha": "1932014368fb6f6047f9d76687af4ddf6c8f0fe2",
+    "size": 0,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/docs?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/tree/master/docs",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/trees/1932014368fb6f6047f9d76687af4ddf6c8f0fe2",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/docs?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/trees/1932014368fb6f6047f9d76687af4ddf6c8f0fe2",
+      "html": "https://github.com/crystal-lang/shards/tree/master/docs"
+    }
+  },
+  {
+    "name": "man",
+    "path": "man",
+    "sha": "7698efabaaf27fe0aec878d381b194b23130eae2",
+    "size": 0,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/man?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/tree/master/man",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/trees/7698efabaaf27fe0aec878d381b194b23130eae2",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/man?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/trees/7698efabaaf27fe0aec878d381b194b23130eae2",
+      "html": "https://github.com/crystal-lang/shards/tree/master/man"
+    }
+  },
+  {
+    "name": "renovate.json",
+    "path": "renovate.json",
+    "sha": "0b816512de0a9a489563d9d9743ce952623aad16",
+    "size": 311,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/renovate.json?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/blob/master/renovate.json",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/blobs/0b816512de0a9a489563d9d9743ce952623aad16",
+    "download_url": "https://raw.githubusercontent.com/crystal-lang/shards/master/renovate.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/renovate.json?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/blobs/0b816512de0a9a489563d9d9743ce952623aad16",
+      "html": "https://github.com/crystal-lang/shards/blob/master/renovate.json"
+    }
+  },
+  {
+    "name": "shard.yml",
+    "path": "shard.yml",
+    "sha": "ab888d65c57b9c8543910037551025923211902a",
+    "size": 250,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/shard.yml?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/blob/master/shard.yml",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/blobs/ab888d65c57b9c8543910037551025923211902a",
+    "download_url": "https://raw.githubusercontent.com/crystal-lang/shards/master/shard.yml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/shard.yml?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/blobs/ab888d65c57b9c8543910037551025923211902a",
+      "html": "https://github.com/crystal-lang/shards/blob/master/shard.yml"
+    }
+  },
+  {
+    "name": "spec",
+    "path": "spec",
+    "sha": "c157681388a5e44b5f1440a0cbbebe353693910a",
+    "size": 0,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/spec?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/tree/master/spec",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/trees/c157681388a5e44b5f1440a0cbbebe353693910a",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/spec?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/trees/c157681388a5e44b5f1440a0cbbebe353693910a",
+      "html": "https://github.com/crystal-lang/shards/tree/master/spec"
+    }
+  },
+  {
+    "name": "src",
+    "path": "src",
+    "sha": "fb5de80914c837ed08c63deb828351434750ff90",
+    "size": 0,
+    "url": "https://api.github.com/repos/crystal-lang/shards/contents/src?ref=master",
+    "html_url": "https://github.com/crystal-lang/shards/tree/master/src",
+    "git_url": "https://api.github.com/repos/crystal-lang/shards/git/trees/fb5de80914c837ed08c63deb828351434750ff90",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/crystal-lang/shards/contents/src?ref=master",
+      "git": "https://api.github.com/repos/crystal-lang/shards/git/trees/fb5de80914c837ed08c63deb828351434750ff90",
+      "html": "https://github.com/crystal-lang/shards/tree/master/src"
+    }
+  }
+]

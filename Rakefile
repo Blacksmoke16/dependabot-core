@@ -42,6 +42,8 @@ GEMSPECS = %w(
   terraform/dependabot-terraform.gemspec
   uv/dependabot-uv.gemspec
   vcpkg/dependabot-vcpkg.gemspec
+  shards/dependabot-shards.gemspec
+  devcontainers/dependabot-devcontainers.gemspec
 ).freeze
 
 def run_command(command)

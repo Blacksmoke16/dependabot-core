@@ -91,3 +91,6 @@ helm:
 vcpkg:
   - *shared
   - 'vcpkg/**'
+shards:
+  - *shared
+  - 'shards/**'
