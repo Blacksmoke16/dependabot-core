@@ -23,11 +23,20 @@ module Dependabot
         "Repo must contain shard.yml."
       end
 
+      sig { override.returns(T::Hash[Symbol, T.untyped]) }
+      def ecosystem_versions
+        {
+          package_managers: {
+            "shards" => parsed_lockfile&.[]("version")&.to_s || "2.0"
+          }
+        }
+      end
+
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
         fetched_files << shard_yml
-        fetched_files << shard_lock if shard_lock
+        fetched_files << lockfile if lockfile
         fetched_files
       end
 
@@ -37,10 +46,18 @@ module Dependabot
         @shards_yml ||= fetch_file_from_host("shard.yml")
       end
 
-      def shard_lock
-        return @shard_lock if defined?(@shard_lock)
+      def lockfile
+        return @lockfile if defined?(@lockfile)
 
-        @shard_lock = fetch_file_if_present("shard.lock")
+        @lockfile = fetch_file_if_present("shard.lock")
+      end
+
+      def parsed_lockfile
+        return unless lockfile
+
+        @parsed_lockfile ||= YAML.safe_load(lockfile.content)
+      rescue Psych::SyntaxError
+        raise Dependabot::DependencyFileNotParseable, lockfile.path
       end
     end
   end
