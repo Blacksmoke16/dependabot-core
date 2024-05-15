@@ -40,6 +40,8 @@ RSpec.describe Dependabot::Shards::FileParser do
               file:        "shard.yml",
               groups:      ["dependencies"],
               source:      {
+                branch: nil,
+                ref: nil,
                 type: "git",
                 url:  "https://github.com/datanoise/openssl.cr.git",
               },
@@ -61,6 +63,89 @@ RSpec.describe Dependabot::Shards::FileParser do
               file:        "shard.yml",
               groups:      ["dependencies"],
               source:      {
+                branch: nil,
+                ref: nil,
+                type: "git",
+                url:  "https://github.com/crystal-lang/crystal-db.git",
+              },
+            }]
+          )
+        end
+      end
+    end
+
+    context "with a commit specified" do
+      let(:project_name) { "commit_source" }
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("db") }
+        its(:version) { is_expected.to eq("0.13.0+git.commit.1d0105ffeb1f983fafdda7ec2fd68916f74b4a4c") }
+        its(:requirements) do
+          is_expected.to eq(
+            [{
+              requirement: nil,
+              file:        "shard.yml",
+              groups:      ["dependencies"],
+              source:      {
+                branch: nil,
+                ref: "1d0105ffeb1f983fafdda7ec2fd68916f74b4a4c",
+                type: "git",
+                url:  "https://github.com/crystal-lang/crystal-db.git",
+              },
+            }]
+          )
+        end
+      end
+    end
+
+    context "with a branch specified" do
+      let(:project_name) { "branch_source" }
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("db") }
+        its(:version) { is_expected.to eq("0.13.1+git.commit.3eaac85a5d4b7bee565b55dcb584e84e29fc5567") }
+        its(:requirements) do
+          is_expected.to eq(
+            [{
+              requirement: nil,
+              file:        "shard.yml",
+              groups:      ["dependencies"],
+              source:      {
+                branch: "master",
+                ref: nil,
+                type: "git",
+                url:  "https://github.com/crystal-lang/crystal-db.git",
+              },
+            }]
+          )
+        end
+      end
+    end
+
+    context "with a branch specified" do
+      let(:project_name) { "tag_source" }
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("db") }
+        its(:version) { is_expected.to eq("0.13.0+git.commit.7fff589e026412646b33cef80f78cd1c7fd072aa") }
+        its(:requirements) do
+          is_expected.to eq(
+            [{
+              requirement: nil,
+              file:        "shard.yml",
+              groups:      ["dependencies"],
+              source:      {
+                branch: nil,
+                ref: "v0.13.0",
                 type: "git",
                 url:  "https://github.com/crystal-lang/crystal-db.git",
               },
@@ -84,6 +169,8 @@ RSpec.describe Dependabot::Shards::FileParser do
             file:        "shard.yml",
             groups:      ["dependencies"],
             source:      {
+              branch: nil,
+              ref: nil,
               type: "git",
               url:  "https://gitlab.com/arctic-fox/spectator.git",
             },
@@ -120,6 +207,8 @@ RSpec.describe Dependabot::Shards::FileParser do
             file:        "shard.yml",
             groups:      ["development_dependencies"],
             source:      {
+              branch: nil,
+              ref: nil,
               type: "git",
               url:  "https://github.com/crystal-lang/crystal-db.git",
             },
