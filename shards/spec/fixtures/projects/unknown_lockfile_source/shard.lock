@@ -1,0 +1,5 @@
+version: 2.0
+shards:
+  db:
+    vcs: https://github.com/crystal-lang/crystal-db.git
+    version: 0.13.1

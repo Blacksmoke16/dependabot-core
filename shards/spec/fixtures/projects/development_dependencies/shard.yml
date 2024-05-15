@@ -1,9 +1,7 @@
 name: shards
 version: 0.1.0
 
-dependencies:
-  openssl:
-    github: datanoise/openssl.cr
+development_dependencies:
   db:
     github: crystal-lang/crystal-db
     version: ~> 0.13.0

@@ -41,7 +41,7 @@ RSpec.describe Dependabot::Shards::FileParser do
               groups:      ["dependencies"],
               source:      {
                 type: "git",
-                url:  "https://github.com/datanoise/openssl.cr",
+                url:  "https://github.com/datanoise/openssl.cr.git",
               },
             }]
           )
@@ -62,7 +62,7 @@ RSpec.describe Dependabot::Shards::FileParser do
               groups:      ["dependencies"],
               source:      {
                 type: "git",
-                url:  "https://github.com/crystal-lang/db",
+                url:  "https://github.com/crystal-lang/crystal-db.git",
               },
             }]
           )
@@ -70,347 +70,141 @@ RSpec.describe Dependabot::Shards::FileParser do
       end
     end
 
-    # context "null dependencies with lockfile" do
-    #   let(:project_name) { "null_dependencies_with_lockfile" }
-    #   let(:name) { "phpunit/phpunit" }
-    #   let(:type) { "development" }
-    #   describe "no dependencies" do
-    #     subject { dependencies }
-    #     its(:length) { is_expected.to be >= 0 }
-    #   end
-    # end
+    context "with an alternative source" do
+      let(:project_name) { "alternative_source" }
+      subject { dependencies[0] }
 
-    # context "with a version specified (composer v1)" do
-    #   let(:project_name) { "v1/minor_version" }
+      it { is_expected.to be_a(Dependabot::Dependency) }
+      its(:name) { is_expected.to eq("spectator") }
+      its(:version) { is_expected.to eq("0.12.0") }
+      its(:requirements) do
+        is_expected.to eq(
+          [{
+            requirement: "~> 0.12.0",
+            file:        "shard.yml",
+            groups:      ["dependencies"],
+            source:      {
+              type: "git",
+              url:  "https://gitlab.com/arctic-fox/spectator.git",
+            },
+          }]
+        )
+      end
+    end
 
-    #   describe "the first dependency" do
-    #     subject { dependencies.first }
+    context "with an unexpected lockfile source" do
+      let(:project_name) { "unknown_lockfile_source" }
 
-    #     it { is_expected.to be_a(Dependabot::Dependency) }
-    #     its(:name) { is_expected.to eq("monolog/monolog") }
-    #     its(:version) { is_expected.to eq("1.0.2") }
-    #     its(:requirements) do
-    #       is_expected.to eq(
-    #         [{
-    #           requirement: "1.0.*",
-    #           file:        "composer.json",
-    #           groups:      ["runtime"],
-    #           source:      {
-    #             type: "git",
-    #             url:  "https://github.com/Seldaek/monolog.git",
-    #           },
-    #         }]
-    #       )
-    #     end
-    #   end
-    # end
+      it "raises a helpful error" do
+        expect { parser.parse }
+          .to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
 
-    # context "with doctored entries" do
-    #   let(:project_name) { "doctored" }
-    #   its(:length) { is_expected.to eq(2) }
-    # end
+    context "for development dependencies" do
+      let(:project_name) { "development_dependencies" }
 
-    # context "with an integer version" do
-    #   let(:project_name) { "integer_version" }
+      it "includes development dependencies" do
+        expect(dependencies.length).to eq(1)
+      end
 
-    #   describe "the first dependency" do
-    #     subject { dependencies.first }
+      subject { dependencies.first }
 
-    #     it { is_expected.to be_a(Dependabot::Dependency) }
-    #     its(:name) do
-    #       is_expected.to eq("wpackagist-plugin/ga-google-analytics")
-    #     end
-    #     its(:version) { is_expected.to eq("20180828") }
-    #   end
-    # end
+      it { is_expected.to be_a(Dependabot::Dependency) }
+      its(:name) { is_expected.to eq("db") }
+      its(:version) { is_expected.to eq("0.13.1") }
+      its(:requirements) do
+        is_expected.to eq(
+          [{
+            requirement: "~> 0.13.0",
+            file:        "shard.yml",
+            groups:      ["development_dependencies"],
+            source:      {
+              type: "git",
+              url:  "https://github.com/crystal-lang/crystal-db.git",
+            },
+          }]
+        )
+      end
+    end
 
-    # context "for development dependencies" do
-    #   let(:project_name) { "development_dependencies" }
+    context "with subdependencies" do
+      let(:project_name) { "development_subdependencies" }
 
-    #   it "includes development dependencies" do
-    #     expect(dependencies.length).to eq(2)
-    #   end
+      its(:length) { is_expected.to eq(4) }
 
-    #   describe "the first dependency" do
-    #     subject { dependencies.first }
+      describe "top level dependencies" do
+        subject { dependencies.select(&:top_level?) }
+        its(:length) { is_expected.to eq(2) }
+      end
 
-    #     it { is_expected.to be_a(Dependabot::Dependency) }
-    #     its(:name) { is_expected.to eq("monolog/monolog") }
-    #     its(:version) { is_expected.to eq("1.0.1") }
-    #     its(:requirements) do
-    #       is_expected.to eq(
-    #         [{
-    #           requirement: "1.0.1",
-    #           file:        "composer.json",
-    #           groups:      ["development"],
-    #           source:      {
-    #             type: "git",
-    #             url:  "https://github.com/Seldaek/monolog.git",
-    #           },
-    #         }]
-    #       )
-    #     end
-    #   end
-    # end
+      describe "a production subdependency" do
+        subject(:subdep) do
+          dependencies.find { |d| d.name == "db" }
+        end
 
-    # context "with the PHP version specified" do
-    #   let(:project_name) { "php_specified" }
+        it "parses the details correctly" do
+          expect(subdep.version).to eq("0.13.1")
+          expect(subdep.subdependency_metadata).to be_nil
+        end
+      end
 
-    #   its(:length) { is_expected.to eq(5) }
+      describe "a development subdependency" do
+        subject(:subdep) do
+          dependencies.find { |d| d.name == "pool" }
+        end
 
-    #   describe "top level dependencies" do
-    #     subject { dependencies.select(&:top_level?) }
-    #     its(:length) { is_expected.to eq(2) }
-    #   end
-    # end
+        it "parses the details correctly" do
+          expect(subdep.version).to eq("0.2.4")
+          expect(subdep.subdependency_metadata).to be_nil
+        end
+      end
+    end
 
-    # context "with subdependencies" do
-    #   let(:project_name) { "development_subdependencies" }
+    context "with a path dependency" do
+      let(:project_name) { "path_source" }
 
-    #   its(:length) { is_expected.to eq(16) }
+      describe "the first dependency" do
+        subject { dependencies.first }
 
-    #   describe "top level dependencies" do
-    #     subject { dependencies.select(&:top_level?) }
-    #     its(:length) { is_expected.to eq(2) }
-    #   end
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("test") }
+        its(:version) { is_expected.to eq("0.1.0") }
+        its(:requirements) do
+          is_expected.to eq(
+            [{
+              requirement: nil,
+              file:        "shard.yml",
+              groups:      ["dependencies"],
+              source:      {type: "path"},
+            }]
+          )
+        end
+      end
+    end
 
-    #   describe "a production subdependency" do
-    #     subject(:subdep) do
-    #       dependencies.find { |d| d.name == "symfony/polyfill-ctype" }
-    #     end
+    context "without a lockfile" do
+      let(:project_name) { "simple_without_lockfile" }
 
-    #     it "parses the details correctly" do
-    #       expect(subdep.version).to eq("1.11.0")
-    #       expect(subdep.subdependency_metadata).to eq([{production: true}])
-    #     end
-    #   end
+      its(:length) { is_expected.to eq(2) }
 
-    #   describe "a development subdependency" do
-    #     subject(:subdep) do
-    #       dependencies.find { |d| d.name == "phpunit/php-token-stream" }
-    #     end
+      describe "the first dependency" do
+        subject { dependencies.first }
 
-    #     it "parses the details correctly" do
-    #       expect(subdep.version).to eq("3.1.0")
-    #       expect(subdep.subdependency_metadata).to eq([{production: false}])
-    #     end
-    #   end
-    # end
-
-    # context "with a version with a 'v' prefix" do
-    #   let(:project_name) { "v_prefix" }
-
-    #   it "strips the prefix" do
-    #     expect(dependencies.first.version).to eq("1.0.2")
-    #   end
-    # end
-
-    # context "with a git dependency" do
-    #   let(:project_name) { "git_source" }
-
-    #   it "includes the dependency" do
-    #     expect(dependencies.length).to eq(2)
-    #   end
-
-    #   describe "the first dependency" do
-    #     subject { dependencies.first }
-
-    #     it { is_expected.to be_a(Dependabot::Dependency) }
-    #     its(:name) { is_expected.to eq("monolog/monolog") }
-    #     its(:version) do
-    #       is_expected.to eq("5267b03b1e4861c4657ede17a88f13ef479db482")
-    #     end
-    #     its(:requirements) do
-    #       is_expected.to eq(
-    #         [{
-    #           requirement: "dev-example",
-    #           file:        "composer.json",
-    #           groups:      ["runtime"],
-    #           source:      {
-    #             type:   "git",
-    #             url:    "https://github.com/dependabot/monolog.git",
-    #             branch: "example",
-    #             ref:    nil,
-    #           },
-    #         }]
-    #       )
-    #     end
-
-    #     context "specified as an alias" do
-    #       let(:project_name) { "git_source_alias" }
-
-    #       its(:requirements) do
-    #         is_expected.to eq(
-    #           [{
-    #             requirement: "dev-example as 1.0.2",
-    #             file:        "composer.json",
-    #             groups:      ["runtime"],
-    #             source:      {
-    #               type:   "git",
-    #               url:    "https://github.com/dependabot/monolog.git",
-    #               branch: "example",
-    #               ref:    nil,
-    #             },
-    #           }]
-    #         )
-    #       end
-    #     end
-
-    #     context "due to a stability flag" do
-    #       subject { dependencies.last }
-
-    #       let(:project_name) { "git_source_transitive" }
-
-    #       its(:requirements) do
-    #         is_expected.to eq(
-    #           [{
-    #             requirement: "1.*@dev",
-    #             file:        "composer.json",
-    #             groups:      ["runtime"],
-    #             source:      {
-    #               type:   "git",
-    #               url:    "https://github.com/php-fig/log.git",
-    #               branch: "master",
-    #               ref:    nil,
-    #             },
-    #           }]
-    #         )
-    #       end
-    #     end
-    #   end
-    # end
-
-    # context "with a gutted lockfile" do
-    #   let(:project_name) { "gutted" }
-
-    #   it "skips the dependency" do
-    #     expect(dependencies.length).to eq(0)
-    #   end
-    # end
-
-    # context "with a path dependency" do
-    #   let(:project_name) { "path_source" }
-
-    #   describe "the first dependency" do
-    #     subject { dependencies.first }
-
-    #     it { is_expected.to be_a(Dependabot::Dependency) }
-    #     its(:name) { is_expected.to eq("path_dep/path_dep") }
-    #     its(:version) { is_expected.to eq("1.0.1") }
-    #     its(:requirements) do
-    #       is_expected.to eq(
-    #         [{
-    #           requirement: "1.0.*",
-    #           file:        "composer.json",
-    #           groups:      ["runtime"],
-    #           source:      {type: "path"},
-    #         }]
-    #       )
-    #     end
-    #   end
-    # end
-
-    # context "without a lockfile" do
-    #   let(:project_name) { "minor_version_without_lockfile" }
-
-    #   its(:length) { is_expected.to eq(2) }
-
-    #   describe "the first dependency" do
-    #     subject { dependencies.first }
-
-    #     it { is_expected.to be_a(Dependabot::Dependency) }
-    #     its(:name) { is_expected.to eq("monolog/monolog") }
-    #     its(:version) { is_expected.to be_nil }
-    #     its(:requirements) do
-    #       is_expected.to eq(
-    #         [{
-    #           requirement: "1.0.*",
-    #           file:        "composer.json",
-    #           groups:      ["runtime"],
-    #           source:      nil,
-    #         }]
-    #       )
-    #     end
-    #   end
-
-    #   context "for development dependencies" do
-    #     let(:project_name) { "development_dependencies_without_lockfile" }
-
-    #     it "includes development dependencies" do
-    #       expect(dependencies.length).to eq(2)
-    #     end
-
-    #     describe "the first dependency" do
-    #       subject { dependencies.first }
-
-    #       it { is_expected.to be_a(Dependabot::Dependency) }
-    #       its(:name) { is_expected.to eq("monolog/monolog") }
-    #       its(:version) { is_expected.to be_nil }
-    #       its(:requirements) do
-    #         is_expected.to eq(
-    #           [{
-    #             requirement: "1.0.1",
-    #             file:        "composer.json",
-    #             groups:      ["development"],
-    #             source:      nil,
-    #           }]
-    #         )
-    #       end
-    #     end
-    #   end
-
-    #   context "with the PHP version specified" do
-    #     let(:project_name) { "php_specified_without_lockfile" }
-    #     its(:length) { is_expected.to eq(2) }
-    #   end
-
-    #   context "with a git dependency" do
-    #     let(:project_name) { "git_source_without_lockfile" }
-
-    #     it "includes the dependency" do
-    #       expect(dependencies.length).to eq(2)
-    #     end
-
-    #     describe "the first dependency" do
-    #       subject { dependencies.first }
-
-    #       it { is_expected.to be_a(Dependabot::Dependency) }
-    #       its(:name) { is_expected.to eq("monolog/monolog") }
-    #       its(:version) { is_expected.to be_nil }
-    #       its(:requirements) do
-    #         is_expected.to eq(
-    #           [{
-    #             requirement: "dev-example",
-    #             file:        "composer.json",
-    #             groups:      ["runtime"],
-    #             source:      nil,
-    #           }]
-    #         )
-    #       end
-    #     end
-    #   end
-    # end
-
-    # context "with a bad lockfile" do
-    #   let(:project_name) { "unparseable_lockfile" }
-
-    #   it "raises a DependencyFileNotParseable error" do
-    #     expect { dependencies.length }
-    #       .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
-    #         expect(error.file_name).to eq("composer.lock")
-    #       end
-    #   end
-    # end
-
-    # context "with a bad composer.json" do
-    #   let(:project_name) { "unparseable_composer_json" }
-
-    #   it "raises a DependencyFileNotParseable error" do
-    #     expect { dependencies.length }
-    #       .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
-    #         expect(error.file_name).to eq("composer.json")
-    #       end
-    #   end
-    # end
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("openssl") }
+        its(:version) { is_expected.to be_nil }
+        its(:requirements) do
+          is_expected.to eq(
+            [{
+              requirement: nil,
+              file:        "shard.yml",
+              groups:      ["dependencies"],
+              source:      nil,
+            }]
+          )
+        end
+      end
+    end
   end
 end

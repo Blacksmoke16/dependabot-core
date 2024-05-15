@@ -37,6 +37,7 @@ module Dependabot
         fetched_files = []
         fetched_files << shard_yml
         fetched_files << lockfile if lockfile
+        # TODO: Handle path dependencies
         fetched_files
       end
 

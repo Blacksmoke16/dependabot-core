@@ -53,7 +53,6 @@ module Dependabot
               version = dependency_version(name: name)
 
               # Ignore dependency versions which don't appear in the lock file or are non-numeric since they can't be compared later in the process.
-              # TODO: Handle git SHAs
               next unless version&.match?(/^\d/)
             end
 
@@ -107,7 +106,7 @@ module Dependabot
           return { type: "git", url: url }
         end
 
-        raise "Oh noes?"
+        raise Dependabot::DependencyFileNotEvaluatable.new
       end
 
       def lockfile_details(name:)
@@ -120,26 +119,21 @@ module Dependabot
 
         return dependencies unless lockfile
 
-        deps = parsed_shard_yaml.fetch("dependencies", {}).keys
-        dev_deps = parsed_shard_yaml.fetch("development_dependencies", {}).keys
-
         parsed_lockfile["shards"].each do |name, attributes|
-          dependencies << build_lockfile_dependency(name, attributes["version"], !deps.include?(name) && dev_deps.include?(name))
+          dependencies << build_lockfile_dependency(name, attributes["version"])
         end
 
         dependencies
       end
 
       # rubocop:enable Metrics/PerceivedComplexity
-      def build_lockfile_dependency(name, version, is_dev_dep)
+      def build_lockfile_dependency(name, version)
         Dependency.new(
           name: name,
           version: version,
           requirements: [],
           package_manager: "shards",
-          subdependency_metadata: [{
-            production: is_dev_dep
-          }]
+          subdependency_metadata: [] # TODO: Do we have a way to even know this?
         )
       end
     end
