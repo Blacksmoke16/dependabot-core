@@ -103,7 +103,12 @@ module Dependabot
         if package_details.has_key?("path")
           return { type: "path" }
         elsif url = package_details["git"]
-          return { type: "git", url: url, branch: attributes["branch"], ref: attributes["tag"] || attributes["commit"] }
+          return {
+            type: "git",
+            url: url,
+            branch: attributes["branch"],
+            ref: attributes["commit"] || attributes["tag"] || package_details["version"].match(/\+git\.commit\.([\w\d]+)/)&.[](1)
+          }
         end
 
         raise Dependabot::DependencyFileNotEvaluatable.new

@@ -118,7 +118,7 @@ RSpec.describe Dependabot::Shards::FileParser do
               groups:      ["dependencies"],
               source:      {
                 branch: "master",
-                ref: nil,
+                ref: "3eaac85a5d4b7bee565b55dcb584e84e29fc5567",
                 type: "git",
                 url:  "https://github.com/crystal-lang/crystal-db.git",
               },
@@ -128,7 +128,7 @@ RSpec.describe Dependabot::Shards::FileParser do
       end
     end
 
-    context "with a branch specified" do
+    context "with a tag specified" do
       let(:project_name) { "tag_source" }
 
       describe "the first dependency" do
