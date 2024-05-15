@@ -80,11 +80,12 @@ RSpec.describe Dependabot::Shards::FileFetcher do
         .to_return(status: 404)
     end
 
-    it "fetches the composer.json" do
+    it "fetches only shard.yml" do
     expect(file_fetcher_instance.files.map(&:name))
-      .to match_array(%w(shard.yml))    end
+      .to match_array(%w(shard.yml))
+    end
 
-    it "provides the composer version" do
+    it "provides the default shards.lock version" do
       expect(file_fetcher_instance.ecosystem_versions).to eq({
         package_managers: { "shards" => "2.0" }
       })
