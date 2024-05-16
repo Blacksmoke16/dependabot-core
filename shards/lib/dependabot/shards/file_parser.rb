@@ -107,7 +107,7 @@ module Dependabot
             type: "git",
             url: url,
             branch: attributes["branch"],
-            ref: attributes["commit"] || attributes["tag"] || package_details["version"].match(/\+git\.commit\.([\w\d]+)/)&.[](1)
+            ref: attributes["commit"] || attributes["tag"]
           }
         end
 

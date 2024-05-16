@@ -118,7 +118,7 @@ RSpec.describe Dependabot::Shards::FileParser do
               groups:      ["dependencies"],
               source:      {
                 branch: "master",
-                ref: "3eaac85a5d4b7bee565b55dcb584e84e29fc5567",
+                ref: nil,
                 type: "git",
                 url:  "https://github.com/crystal-lang/crystal-db.git",
               },
