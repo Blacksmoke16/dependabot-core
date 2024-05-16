@@ -49,10 +49,6 @@ module Dependabot
 
         def updated_requirements
           return requirements if update_strategy == RequirementsUpdateStrategy::LockfileOnly
-
-          pp latest_resolvable_version
-          exit 1
-
           return requirements unless latest_resolvable_version
 
           requirements.map { |req| updated_requirement(req) }

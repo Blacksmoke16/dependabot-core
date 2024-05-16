@@ -45,100 +45,50 @@ module Dependabot
             write_temporary_dependency_files
 
             SharedHelpers.with_git_configured(credentials: credentials) do
-              run_shards_outdated_command
+              run_shards_lock_command
             end
 
             updated_version = fetch_version_from_new_lockfile
 
-            # return if updated_version.nil?
-            # return updated_version if git_dependency?
+            return if updated_version.nil?
+            return updated_version if git_dependency?
 
-            # version_class.new(updated_version)
+            version_class.new(updated_version)
           end
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          retry if better_specification_needed?(e)
-          handle_cargo_errors(e)
+        # rescue SharedHelpers::HelperSubprocessFailed => e
+        #   retry if better_specification_needed?(e)
+        #   handle_cargo_errors(e)
         end
 
         def fetch_version_from_new_lockfile
           lockfile_content = File.read("shard.lock")
           versions = YAML.safe_load(lockfile_content).fetch("shards")
-                           .select { |(k, _)| k == dependency.name }
-
-          pp versions
-
-          exit 0
+                           .select { |(k, attributes)| k == dependency.name }
+                           .map { |(_, attributes)| attributes }
 
           updated_version =
             if dependency.top_level?
-              versions.max_by { |p| version_class.new(p.fetch("version")) }
+              versions.max_by { |o| version_class.new(o.fetch("version")) }
             else
-              versions.min_by { |p| version_class.new(p.fetch("version")) }
+              versions.min_by { |o| version_class.new(o.fetch("version")) }
             end
 
           return unless updated_version
 
-          if git_dependency?
-            updated_version.fetch("source").split("#").last
-          else
-            updated_version.fetch("version")
+          version = updated_version.fetch("version")
+
+          # Use the commit hash as it's the most accurate in this context
+          if match = version.match(/(.*)\+git\.commit\.([\w\d]+)/)
+            return match[1]
           end
+
+          version
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/CyclomaticComplexity
-        # rubocop:disable Metrics/AbcSize
-        def better_specification_needed?(error)
-          return false if @custom_specification
-          return false unless error.message.match?(/specification .* is ambigu/)
-
-          spec_options = error.message.gsub(/.*following:\n/m, "")
-                              .lines.map(&:strip)
-
-          ver = if git_dependency? && git_dependency_version
-                  git_dependency_version
-                else
-                  dependency.version
-                end
-
-          if spec_options.count { |s| s.end_with?(ver) } == 1
-            @custom_specification = spec_options.find { |s| s.end_with?(ver) }
-            return true
-          elsif spec_options.count { |s| s.end_with?(ver) } > 1
-            spec_options.select! { |s| s.end_with?(ver) }
-          end
-
-          if git_dependency? && git_source_url &&
-             spec_options.count { |s| s.include?(git_source_url) } >= 1
-            spec_options.select! { |s| s.include?(git_source_url) }
-          end
-
-          @custom_specification = spec_options.first
-          true
-        end
-        # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/CyclomaticComplexity
-        # rubocop:enable Metrics/PerceivedComplexity
-
-        def dependency_spec
-          return @custom_specification if @custom_specification
-
-          spec = dependency.name
-
-          if git_dependency?
-            spec += ":#{git_dependency_version}" if git_dependency_version
-          elsif dependency.version
-            spec += ":#{dependency.version}"
-          end
-
-          spec
-        end
-
-        # Shell out to Cargo, which handles everything for us, and does
-        # so without doing an install (so it's fast).
-        def run_shards_outdated_command
+        # Shell out to Shards, which handles everything for us, and does so without actually installing anything (so it's fast).
+        def run_shards_lock_command
           run_shards_command(
-            "shards outdated"
+            "shards lock --update"
           )
         end
 
