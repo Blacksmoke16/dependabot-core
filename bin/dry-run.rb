@@ -630,6 +630,8 @@ dependencies.each do |dep|
   puts " => checking for updates #{checker_count}/#{dependencies.count}"
   puts " => latest available version is #{checker.latest_version}"
 
+
+
   if $options[:security_updates_only] && !checker.vulnerable?
     if checker.version_class.correct?(checker.dependency.version)
       puts "    (no security update needed as it's not vulnerable)"
@@ -641,19 +643,19 @@ dependencies.each do |dep|
     next
   end
 
-  if checker.vulnerable?
-    if checker.lowest_security_fix_version
-      puts " => earliest available non-vulnerable version is " \
-           "#{checker.lowest_security_fix_version}"
-    else
-      puts " => there is no available non-vulnerable version"
-    end
-  end
+  # if checker.vulnerable?
+  #   if checker.lowest_security_fix_version
+  #     puts " => earliest available non-vulnerable version is " \
+  #          "#{checker.lowest_security_fix_version}"
+  #   else
+  #     puts " => there is no available non-vulnerable version"
+  #   end
+  # end
 
-  if checker.up_to_date?
-    puts "    (no update needed as it's already up-to-date)"
-    next
-  end
+  # if checker.up_to_date?
+  #   puts "    (no update needed as it's already up-to-date)"
+  #   next
+  # end
 
   latest_allowed_version = if checker.vulnerable?
                              checker.lowest_resolvable_security_fix_version
@@ -661,6 +663,8 @@ dependencies.each do |dep|
                              checker.latest_resolvable_version
                            end
   puts " => latest allowed version is #{latest_allowed_version || dep.version}"
+
+  exit 0
 
   requirements_to_unlock =
     if !checker.requirements_unlocked_or_can_be?
