@@ -122,6 +122,12 @@ PATH
       dependabot-common (= 0.257.0)
 
 PATH
+  remote: shards
+  specs:
+    dependabot-shards (0.257.0)
+      dependabot-common (= 0.257.0)
+
+PATH
   remote: silent
   specs:
     dependabot-silent (0.257.0)
@@ -390,6 +396,7 @@ DEPENDENCIES
   dependabot-nuget!
   dependabot-pub!
   dependabot-python!
+  dependabot-shards!
   dependabot-silent!
   dependabot-swift!
   dependabot-terraform!

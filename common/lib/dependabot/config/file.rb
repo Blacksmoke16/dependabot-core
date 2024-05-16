@@ -75,6 +75,7 @@ module Dependabot
         "pip" => "pip",
         "pub" => "pub",
         "swift" => "swift",
+        "shards" => "shards",
         "terraform" => "terraform"
       }.freeze, T::Hash[String, String])
 

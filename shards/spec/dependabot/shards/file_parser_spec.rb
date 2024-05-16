@@ -82,7 +82,7 @@ RSpec.describe Dependabot::Shards::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("db") }
-        its(:version) { is_expected.to eq("0.13.0+git.commit.1d0105ffeb1f983fafdda7ec2fd68916f74b4a4c") }
+        its(:version) { is_expected.to be_nil }
         its(:requirements) do
           is_expected.to eq(
             [{
@@ -109,7 +109,7 @@ RSpec.describe Dependabot::Shards::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("db") }
-        its(:version) { is_expected.to eq("0.13.1+git.commit.3eaac85a5d4b7bee565b55dcb584e84e29fc5567") }
+        its(:version) { is_expected.to be_nil }
         its(:requirements) do
           is_expected.to eq(
             [{
@@ -136,7 +136,7 @@ RSpec.describe Dependabot::Shards::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("db") }
-        its(:version) { is_expected.to eq("0.13.0+git.commit.7fff589e026412646b33cef80f78cd1c7fd072aa") }
+        its(:version) { is_expected.to be_nil }
         its(:requirements) do
           is_expected.to eq(
             [{
@@ -155,13 +155,13 @@ RSpec.describe Dependabot::Shards::FileParser do
       end
     end
 
-    context "with an alternative source" do
-      let(:project_name) { "alternative_source" }
+    context "with gitlab source" do
+      let(:project_name) { "gitlab_source" }
       subject { dependencies[0] }
 
       it { is_expected.to be_a(Dependabot::Dependency) }
       its(:name) { is_expected.to eq("spectator") }
-      its(:version) { is_expected.to eq("0.12.0") }
+      its(:version) { is_expected.to be_nil }
       its(:requirements) do
         is_expected.to eq(
           [{
@@ -179,12 +179,93 @@ RSpec.describe Dependabot::Shards::FileParser do
       end
     end
 
-    context "with an unexpected lockfile source" do
-      let(:project_name) { "unknown_lockfile_source" }
+    context "with bitbucket source" do
+      let(:project_name) { "bitbucket_source" }
+      subject { dependencies[0] }
 
-      it "raises a helpful error" do
-        expect { parser.parse }
-          .to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      it { is_expected.to be_a(Dependabot::Dependency) }
+      its(:name) { is_expected.to eq("test") }
+      its(:version) { is_expected.to be_nil }
+      its(:requirements) do
+        is_expected.to eq(
+          [{
+            requirement: nil,
+            file:        "shard.yml",
+            groups:      ["dependencies"],
+            source:      {
+              branch: nil,
+              ref: nil,
+              type: "git",
+              url:  "https://bitbucket.com/org/test.git",
+            },
+          }]
+        )
+      end
+    end
+
+    context "with git source" do
+      let(:project_name) { "git_source" }
+      subject { dependencies[0] }
+
+      it { is_expected.to be_a(Dependabot::Dependency) }
+      its(:name) { is_expected.to eq("geoffrey") }
+      its(:version) { is_expected.to be_nil }
+      its(:requirements) do
+        is_expected.to eq(
+          [{
+            requirement: nil,
+            file:        "shard.yml",
+            groups:      ["dependencies"],
+            source:      {
+              branch: nil,
+              ref: nil,
+              type: "git",
+              url:  "https://codeberg.org/skinnyjames/geoffrey.git",
+            },
+          }]
+        )
+      end
+    end
+
+    context "with a path dependency" do
+      let(:project_name) { "path_source" }
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("test") }
+        its(:version) { is_expected.to be_nil }
+        its(:requirements) do
+          is_expected.to eq(
+            [{
+              requirement: nil,
+              file:        "shard.yml",
+              groups:      ["dependencies"],
+              source:      {type: "path"},
+            }]
+          )
+        end
+      end
+    end
+
+    context "with an unsupported lockfile source" do
+      let(:project_name) { "unsupported_source" }
+
+      subject { dependencies[0] }
+
+      it { is_expected.to be_a(Dependabot::Dependency) }
+      its(:name) { is_expected.to eq("fossil") }
+      its(:version) { is_expected.to be_nil }
+      its(:requirements) do
+        is_expected.to eq(
+          [{
+            requirement: nil,
+            file: "shard.yml",
+            groups: ["dependencies"],
+            source: nil,
+          }]
+        )
       end
     end
 
@@ -246,52 +327,6 @@ RSpec.describe Dependabot::Shards::FileParser do
         it "parses the details correctly" do
           expect(subdep.version).to eq("0.2.4")
           expect(subdep.subdependency_metadata).to be_nil
-        end
-      end
-    end
-
-    context "with a path dependency" do
-      let(:project_name) { "path_source" }
-
-      describe "the first dependency" do
-        subject { dependencies.first }
-
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("test") }
-        its(:version) { is_expected.to eq("0.1.0") }
-        its(:requirements) do
-          is_expected.to eq(
-            [{
-              requirement: nil,
-              file:        "shard.yml",
-              groups:      ["dependencies"],
-              source:      {type: "path"},
-            }]
-          )
-        end
-      end
-    end
-
-    context "without a lockfile" do
-      let(:project_name) { "simple_without_lockfile" }
-
-      its(:length) { is_expected.to eq(2) }
-
-      describe "the first dependency" do
-        subject { dependencies.first }
-
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("openssl") }
-        its(:version) { is_expected.to be_nil }
-        its(:requirements) do
-          is_expected.to eq(
-            [{
-              requirement: nil,
-              file:        "shard.yml",
-              groups:      ["dependencies"],
-              source:      nil,
-            }]
-          )
         end
       end
     end

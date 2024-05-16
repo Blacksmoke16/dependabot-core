@@ -64,5 +64,4 @@ module Dependabot
   end
 end
 
-Dependabot::FileFetchers
-  .register("shards", Dependabot::Shards::FileFetcher)
+Dependabot::FileFetchers.register("shards", Dependabot::Shards::FileFetcher)

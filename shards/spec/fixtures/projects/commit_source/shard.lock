@@ -1,5 +1,0 @@
-version: 2.0
-shards:
-  db:
-    git: https://github.com/crystal-lang/crystal-db.git
-    version: 0.13.0+git.commit.1d0105ffeb1f983fafdda7ec2fd68916f74b4a4c

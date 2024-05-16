@@ -95,23 +95,30 @@ module Dependabot
       end
 
       def dependency_source(name:, attributes:)
-        return unless lockfile
-
-        package_details = lockfile_details(name: name)
-        return unless package_details
-
-        if package_details.has_key?("path")
+        if attributes.has_key?("path")
           return { type: "path" }
-        elsif url = package_details["git"]
-          return {
-            type: "git",
-            url: url,
-            branch: attributes["branch"],
-            ref: attributes["commit"] || attributes["tag"]
-          }
         end
 
-        raise Dependabot::DependencyFileNotEvaluatable.new
+        # https://github.com/crystal-lang/shards/blob/950f383050a138a9d0e74ec48af91caceff13bfe/src/resolvers/git.cr#L121-L122
+        url = if source = attributes["github"]
+          "https://github.com/#{source}.git"
+        elsif source = attributes["gitlab"]
+          "https://gitlab.com/#{source}.git"
+        elsif source = attributes["bitbucket"]
+          "https://bitbucket.com/#{source}.git"
+        elsif url = attributes["git"]
+          url
+        end
+
+        # TODO: Support Mercurial and Fossil?
+        return unless url
+
+        {
+          type: "git",
+          url: url,
+          branch: attributes["branch"],
+          ref: attributes["tag"] || attributes["commit"]
+        }
       end
 
       def lockfile_details(name:)

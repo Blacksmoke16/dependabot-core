@@ -33,6 +33,7 @@ GEMSPECS = %w(
   omnibus/dependabot-omnibus.gemspec
   silent/dependabot-silent.gemspec
   swift/dependabot-swift.gemspec
+  shards/dependabot-shards.gemspec
   devcontainers/dependabot-devcontainers.gemspec
 ).freeze
 
