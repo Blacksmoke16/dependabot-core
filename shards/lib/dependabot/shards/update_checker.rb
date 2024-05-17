@@ -13,6 +13,7 @@ module Dependabot
   module Shards
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       # require_relative "update_checker/file_preparer"
+      require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_resolver"
 
       def latest_version
@@ -28,12 +29,34 @@ module Dependabot
       def updated_requirements
         RequirementsUpdater.new(
           requirements: dependency.requirements,
-          latest_resolvable_version: preferred_resolvable_version&.to_s,
+          updated_source: updated_source,
+          target_version: target_version,
           update_strategy: requirements_update_strategy
         ).updated_requirements
       end
 
       private
+
+      def updated_source
+        # Update the git tag if updating a pinned version
+        if git_commit_checker.pinned_ref_looks_like_version? &&
+           latest_git_tag_is_resolvable?
+          new_tag = git_commit_checker.local_tag_for_latest_version
+          return dependency_source_details.merge(ref: new_tag.fetch(:tag))
+        end
+
+        # Otherwise return the original source
+        dependency_source_details
+      end
+
+      def dependency_source_details
+        dependency.source_details
+      end
+
+      def library?
+        # If it has a lockfile, treat it as an application. Otherwise treat it as a library.
+        dependency_files.none? { |f| f.name == "shard.lock" }
+      end
 
       def path_dependency?
         dependency.requirements.any? { |r| r.dig(:source, :type) == "path" }
@@ -103,6 +126,14 @@ module Dependabot
         )
       end
 
+      def requirements_update_strategy
+        # If passed in as an option (in the base class) honor that option
+        return @requirements_update_strategy if @requirements_update_strategy
+
+        # Otherwise, widen ranges for libraries and bump versions for apps
+        library? ? RequirementsUpdateStrategy::WidenRanges : RequirementsUpdateStrategy::BumpVersionsIfNecessary
+      end
+
       # def lowest_security_fix_version
       #   latest_version_finder.lowest_security_fix_version
       # end
@@ -131,14 +162,6 @@ module Dependabot
 
       # def requirements_unlocked_or_can_be?
       #   requirements_update_strategy != RequirementsUpdateStrategy::LockfileOnly
-      # end
-
-      # def requirements_update_strategy
-      #   # If passed in as an option (in the base class) honour that option
-      #   return @requirements_update_strategy if @requirements_update_strategy
-
-      #   # Otherwise, widen ranges for libraries and bump versions for apps
-      #   library? ? RequirementsUpdateStrategy::WidenRanges : RequirementsUpdateStrategy::BumpVersionsIfNecessary
       # end
 
       # private

@@ -8,42 +8,37 @@ require "dependabot/utils"
 
 module Dependabot
   module Shards
+    # The Requirement type is responsible for "translating" Shards version constraints into a format that can be represented by Gem.
     class Requirement < Dependabot::Requirement
       extend T::Sig
 
-      OR_SEPARATOR = ','.freeze
+      AND_SEPARATOR = ','.freeze
 
-      def self.parse(obj)
-        new_obj = obj.gsub(/@\w+/, "").gsub(/[a-z0-9\-_\.]*\sas\s+/i, "")
-        return DefaultRequirement if new_obj == ""
-
-        super(new_obj)
-      end
-
-      # Returns an array of requirements. At least one requirement from the
-      # returned array must be satisfied for a version to be valid.
+      # For consistency with other languages, we define a requirements array.
+      # Shards doesn't have an `OR` separator for requirements, so it always contains a single element.
       sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Requirement]) }
       def self.requirements_array(requirement_string)
-        T.must(requirement_string).strip.split(OR_SEPARATOR).map do |req_string|
-          new(req_string)
-        end
+        [new(requirement_string)]
       end
 
-      private
+      # Patches Gem::Requirement to make it accept requirement strings like
+      # "~> 4.2.5, >= 4.2.5" without first needing to split them.
+      #
+      # Shards and Gem support the same version constraints except `*`,
+      # so explicitly handle that, passing thru everything else.
+      def initialize(*requirements)
+        requirements =
+          requirements.flatten
+                      .flat_map { |req_string| req_string.split(AND_SEPARATOR) }
+                      .map do |req|
+                        case req
+                        when "*" then ">= 0"
+                        else
+                          req
+                        end
+                      end
 
-      def convert_wildcard_req(req_string)
-        if req_string.start_with?(">", "<")
-          msg = "Illformed requirement [#{req_string.inspect}]"
-          raise Gem::Requirement::BadRequirementError, msg
-        end
-
-        version = req_string.gsub(/^~/, "").gsub(/(?:\.|^)[\*x]/, "")
-        "~> #{version}.0"
-      end
-
-      def convert_tilde_req(req_string)
-        version = req_string.gsub(/^~/, "")
-        "~> #{version}"
+        super(requirements)
       end
     end
   end
