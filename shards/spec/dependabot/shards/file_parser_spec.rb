@@ -82,7 +82,7 @@ RSpec.describe Dependabot::Shards::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("db") }
-        its(:version) { is_expected.to be_nil }
+        its(:version) { is_expected.to eq("0.13.0+git.commit.1d0105ffeb1f983fafdda7ec2fd68916f74b4a4c") }
         its(:requirements) do
           is_expected.to eq(
             [{
@@ -109,7 +109,7 @@ RSpec.describe Dependabot::Shards::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("db") }
-        its(:version) { is_expected.to be_nil }
+        its(:version) { is_expected.to eq("0.13.1+git.commit.3eaac85a5d4b7bee565b55dcb584e84e29fc5567") }
         its(:requirements) do
           is_expected.to eq(
             [{
@@ -136,7 +136,7 @@ RSpec.describe Dependabot::Shards::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("db") }
-        its(:version) { is_expected.to be_nil }
+        its(:version) { is_expected.to eq("0.13.0+git.commit.7fff589e026412646b33cef80f78cd1c7fd072aa") }
         its(:requirements) do
           is_expected.to eq(
             [{
