@@ -5,6 +5,7 @@ require "base64"
 require "sorbet-runtime"
 
 require "dependabot/file_parsers"
+require "dependabot/notices_helpers"
 
 # This class describes the dependencies obtained from a project at a specific commit SHA
 # including both the Dependabot::DependencyFile objects at that reference as well as
@@ -15,6 +16,7 @@ require "dependabot/file_parsers"
 module Dependabot
   class DependencySnapshot
     extend T::Sig
+    include NoticesHelpers
 
     sig do
       params(job: Dependabot::Job, job_definition: T::Hash[String, T.untyped]).returns(Dependabot::DependencySnapshot)
@@ -28,7 +30,7 @@ module Dependabot
         file
       end
 
-      if Dependabot::Experiments.enabled?(:globs) && job.source.directories
+      if job.source.directories
         # The job.source.directory may contain globs, so we use the directories from the fetched files
         job.source.directories = decoded_dependency_files.flat_map(&:directory).uniq
       end
@@ -55,12 +57,26 @@ module Dependabot
 
     sig { returns(T::Array[Dependabot::DependencyFile]) }
     def dependency_files
+      assert_current_directory_set!
       @dependency_files.select { |f| f.directory == @current_directory }
     end
 
     sig { returns(T::Array[Dependabot::Dependency]) }
     def dependencies
+      assert_current_directory_set!
       T.must(@dependencies[@current_directory])
+    end
+
+    sig { returns(T.nilable(Dependabot::Ecosystem)) }
+    def ecosystem
+      @ecosystem[@current_directory]
+    end
+
+    sig { returns(T::Array[Dependabot::Notice]) }
+    def notices
+      # The notices array in dependency snapshot stay immutable,
+      # so we can return a copy
+      @notices[@current_directory]&.dup || []
     end
 
     # Returns the subset of all project dependencies which are permitted
@@ -103,19 +119,60 @@ module Dependabot
       @dependency_group_engine.find_group(name: T.must(job.dependency_group_to_refresh))
     end
 
+    # rubocop:disable Metrics/PerceivedComplexity
+    sig do
+      params(
+        group: Dependabot::DependencyGroup,
+        excluding_dependencies: T::Hash[String, T::Set[String]]
+      )
+        .void
+    end
+    def mark_group_handled(group, excluding_dependencies = {})
+      Dependabot.logger.info("Marking group '#{group.name}' as handled.")
+
+      directories.each do |directory|
+        @current_directory = directory
+
+        if Dependabot::Experiments.enabled?(:allow_refresh_for_existing_pr_dependencies)
+          # add the existing dependencies in the group so individual updates don't try to update them
+          dependencies_in_existing_prs = dependencies_in_existing_pr_for_group(group)
+
+          dependencies_in_existing_prs = dependencies_in_existing_prs.filter do |dep|
+            !dep["directory"] || dep["directory"] == directory
+          end
+
+          # also add dependencies that might be in the group, as a rebase would add them;
+          # this avoids individual PR creation that immediately is superseded by a group PR supersede
+          current_dependencies = group.dependencies.map(&:name).reject do |dep|
+            excluding_dependencies[directory]&.include?(dep)
+          end
+
+          add_handled_dependencies(current_dependencies.concat(dependencies_in_existing_prs.filter_map do |dep|
+            dep["dependency-name"]
+          end))
+        else
+          # add the existing dependencies in the group so individual updates don't try to update them
+          add_handled_dependencies(dependencies_in_existing_pr_for_group(group).filter_map { |d| d["dependency-name"] })
+          # also add dependencies that might be in the group, as a rebase would add them;
+          # this avoids individual PR creation that immediately is superseded by a group PR supersede
+          add_handled_dependencies(group.dependencies.map(&:name))
+        end
+      end
+    end
+    # rubocop:enable Metrics/PerceivedComplexity
+
     sig { params(dependency_names: T.any(String, T::Array[String])).void }
     def add_handled_dependencies(dependency_names)
-      raise "Current directory not set" if @current_directory == ""
-
-      set = @handled_dependencies[@current_directory] || Set.new
-      set += Array(dependency_names)
-      @handled_dependencies[@current_directory] = set
+      assert_current_directory_set!
+      names = Array(dependency_names)
+      Dependabot.logger.info("Adding dependencies as handled: (#{names.join(', ')}).")
+      @handled_dependencies[@current_directory] ||= Set.new
+      @handled_dependencies[@current_directory]&.merge(names)
     end
 
     sig { returns(T::Set[String]) }
     def handled_dependencies
-      raise "Current directory not set" if @current_directory == ""
-
+      assert_current_directory_set!
       T.must(@handled_dependencies[@current_directory])
     end
 
@@ -136,7 +193,18 @@ module Dependabot
       return allowed_dependencies unless groups.any?
 
       # Otherwise return dependencies that haven't been handled during the group update portion.
-      allowed_dependencies.reject { |dep| T.must(@handled_dependencies[@current_directory]).include?(dep.name) }
+      allowed_dependencies.reject { |dep| handled_dependencies.include?(dep.name) }
+    end
+
+    sig { params(group: Dependabot::DependencyGroup).returns(T::Array[String]) }
+    def dependencies_in_existing_pr_for_group(group)
+      existing = job.existing_group_pull_requests.find do |pr|
+        pr["dependency-group-name"] == group.name
+      end&.fetch("dependencies", []) || []
+
+      existing.filter do |dep|
+        dep["dependency-name"]
+      end
     end
 
     private
@@ -154,6 +222,9 @@ module Dependabot
       @current_directory = T.let("", String)
 
       @dependencies = T.let({}, T::Hash[String, T::Array[Dependabot::Dependency]])
+      @ecosystem = T.let({}, T::Hash[String, T.nilable(Dependabot::Ecosystem)])
+      @notices = T.let({}, T::Hash[String, T::Array[Dependabot::Notice]])
+
       directories.each do |dir|
         @current_directory = dir
         @dependencies[dir] = parse_files!
@@ -173,6 +244,8 @@ module Dependabot
       end
 
       job.source.directory = @original_directory
+      # reset to ensure we don't accidentally use it later without setting it
+      @current_directory = ""
       return unless job.source.directory
 
       @current_directory = T.must(job.source.directory)
@@ -199,8 +272,9 @@ module Dependabot
 
     sig { returns(Dependabot::FileParsers::Base) }
     def dependency_file_parser
+      assert_current_directory_set!
       job.source.directory = @current_directory
-      Dependabot::FileParsers.for_package_manager(job.package_manager).new(
+      parser = Dependabot::FileParsers.for_package_manager(job.package_manager).new(
         dependency_files: dependency_files,
         repo_contents_path: job.repo_contents_path,
         source: job.source,
@@ -208,6 +282,47 @@ module Dependabot
         reject_external_code: job.reject_external_code?,
         options: job.experiments
       )
+      # Add 'ecosystem' to the dependency_snapshot to use it in operations
+      ecosystem = parser.ecosystem
+      # Raise an error if the package manager version is unsupported
+      ecosystem&.raise_if_unsupported!
+      # Raise an error if the language version is unsupported
+      ecosystem&.language&.raise_if_unsupported!
+
+      @ecosystem[@current_directory] = ecosystem
+
+      # Log deprecation notices if the package manager is deprecated
+      # and add them to the notices array
+      notices_for_current_directory = []
+
+      # add deprecation notices for the package manager
+      add_deprecation_notice(
+        notices: notices_for_current_directory,
+        version_manager: ecosystem&.package_manager
+      )
+
+      if ecosystem&.language
+        # add deprecation notices for the language
+        add_deprecation_notice(
+          notices: notices_for_current_directory,
+          version_manager: ecosystem.language,
+          version_manager_type: :language
+        )
+      end
+
+      @notices[@current_directory] = notices_for_current_directory
+
+      parser
+    end
+
+    sig { void }
+    def assert_current_directory_set!
+      if @current_directory == "" && directories.count == 1
+        @current_directory = T.must(directories.first)
+        return
+      end
+
+      raise DependabotError, "Assertion failed: Current directory not set" if @current_directory == ""
     end
   end
 end

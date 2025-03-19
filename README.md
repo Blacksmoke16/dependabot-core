@@ -45,8 +45,7 @@ Most people are familiar with the Dependabot service that runs on GitHub.com and
 simple as [checking a `dependabot.yml` configuration file in to your repository's `.github` directory](https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuring-dependabot-version-updates).
 
 However, if you want to run a custom version of Dependabot or run it on another platform, you're not left out in the cold.
-This repo provides the logic necessary for hosting your own standalone Dependabot, as long as you're [not reselling
-Dependabot to others](#license). It currently supports opening Pull Requests against repositories hosted on GitHub, Github Enterprise, Azure DevOps, GitLab, BitBucket, and AWS CodeCommit.
+This repo provides the logic necessary for hosting your own standalone Dependabot. It currently supports opening Pull Requests against repositories hosted on GitHub, Github Enterprise, Azure DevOps, GitLab, BitBucket, and AWS CodeCommit.
 
 Dependabot-Core is a library, so you'll need an entrypoint script of some kind. Here are a few examples to help you get
 started.
@@ -63,7 +62,7 @@ It is intended as a starting point for advanced users to run a self-hosted versi
 ## Dependabot CLI
 
 The [Dependabot CLI](https://github.com/dependabot/cli) is a newer tool that may eventually replace [`dependabot-script`](#dependabot-script) for standalone use cases.
-While it creates dependency diffs, it's currently missing the logic to turn those diffs into actual PR's. Nevertheless, it
+While it creates dependency diffs, it's currently missing the logic to turn those diffs into actual PRs. Nevertheless, it
 may be useful for advanced users looking for examples of how to hack on Dependabot.
 
 ## Dependabot on CI
@@ -233,8 +232,8 @@ It has a [dedicated debugging guide](https://github.com/dependabot/cli#debugging
 
 You can use the `bin/dry-run.rb` script to simulate a dependency update job, printing
 the diff that would be generated to the terminal. It takes two positional
-arguments: the package manager and the GitHub repo name (including the
-account):
+arguments: the [package manager](https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#package-ecosystem)
+and the GitHub repo name (including the account):
 
 ```bash
 $ bin/docker-dev-shell go_modules

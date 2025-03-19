@@ -28,7 +28,7 @@ module Dependabot
 
         File.rename(user_nuget_config_path, temporary_nuget_config_path)
 
-        package_sources = []
+        package_sources = ["    <add key=\"nuget.org\" value=\"https://api.nuget.org/v3/index.json\" />"]
         package_source_credentials = []
         nuget_credentials.each_with_index do |c, i|
           source_name = "nuget_source_#{i + 1}"
@@ -68,13 +68,17 @@ module Dependabot
         add_credentials_to_nuget_config(credentials)
         begin
           yield
+        rescue DependabotError
+          # forward these
+          raise
         rescue StandardError => e
-          Dependabot.logger.error(
+          log_message =
             <<~LOG_MESSAGE
               Block argument of NuGetConfigCredentialHelpers::patch_nuget_config_for_action causes an exception #{e}:
               #{e.message}
             LOG_MESSAGE
-          )
+          Dependabot.logger.error(log_message)
+          puts log_message
         ensure
           restore_user_nuget_config
         end

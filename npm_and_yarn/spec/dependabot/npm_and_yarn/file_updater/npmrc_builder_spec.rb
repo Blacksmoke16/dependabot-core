@@ -39,7 +39,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
           .to eq(fixture("projects", "generic", "npmrc_auth_token", ".npmrc"))
       end
 
-      context "that needs an authToken sanitizing" do
+      context "when it needs to sanitize the authToken" do
         let(:dependency_files) { project_dependency_files("generic/npmrc_env_auth_token") }
 
         it "removes the env variable use" do
@@ -48,7 +48,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
         end
       end
 
-      context "that needs an auth sanitizing" do
+      context "when it needs auth sanitizing" do
         let(:dependency_files) { project_dependency_files("generic/npmrc_env_auth") }
 
         it "removes the env variable use" do
@@ -73,9 +73,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
           "token" => "my_token"
         })]
       end
+
       it { is_expected.to eq("//registry.npmjs.org/:_authToken=my_token") }
 
-      context "and using basic auth" do
+      context "when using basic auth" do
         let(:credentials) do
           [Dependabot::Credential.new({
             "type" => "git_source",
@@ -88,6 +89,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
             "token" => "my:token"
           })]
         end
+
         it "includes Basic auth details" do
           expect(npmrc_content).to eq(
             "always-auth = true\n//registry.npmjs.org/:_auth=bXk6dG9rZW4="
@@ -95,7 +97,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
         end
       end
 
-      context "and an npmrc file" do
+      context "when dealing with an npmrc file" do
         let(:dependency_files) { project_dependency_files("generic/npmrc_auth_token") }
 
         it "appends to the npmrc file" do
@@ -113,7 +115,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
         it { is_expected.to eq("") }
 
-        context "and a yarnrc file" do
+        context "when dealing with a yarnrc file" do
           let(:dependency_files) { project_dependency_files("yarn/yarnrc_global_registry") }
 
           it "uses the yarnrc file registry" do
@@ -144,7 +146,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
         it { is_expected.to eq("") }
 
-        context "and some credentials" do
+        context "when dealing with some credentials" do
           let(:credentials) do
             [Dependabot::Credential.new({
               "type" => "git_source",
@@ -157,9 +159,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               "token" => "my_token"
             })]
           end
+
           it { is_expected.to eq("//registry.npmjs.org/:_authToken=my_token") }
 
-          context "where the registry has a trailing slash" do
+          context "when the registry has a trailing slash" do
             let(:credentials) do
               [Dependabot::Credential.new({
                 "type" => "git_source",
@@ -181,7 +184,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
             end
           end
 
-          context "that match a scoped package" do
+          context "when it matches a scoped package" do
             let(:credentials) do
               [Dependabot::Credential.new({
                 "type" => "git_source",
@@ -206,7 +209,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
                        "//npm.fury.io/dep/:_authToken=my_other_token")
             end
 
-            context "using bintray" do
+            context "when using bintray" do
               let(:credentials) do
                 [Dependabot::Credential.new({
                   "type" => "git_source",
@@ -278,7 +281,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
       context "with a private source used for some deps and creds cleared" do
         let(:dependency_files) { project_dependency_files("yarn/private_source") }
 
-        context "and some credentials" do
+        context "when dealing with some credentials" do
           let(:credentials) do
             [Dependabot::Credential.new({
               "type" => "git_source",
@@ -288,10 +291,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               "registry" => "registry.npmjs.org"
             })]
           end
+
           it { is_expected.to eq("") }
         end
 
-        context "that match a scoped package" do
+        context "when it matches a scoped package" do
           let(:credentials) do
             [Dependabot::Credential.new({
               "type" => "git_source",
@@ -304,6 +308,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               "registry" => "npm.fury.io/dep"
             })]
           end
+
           it "adds auth details, and scopes them correctly" do
             expect(npmrc_content)
               .to eq("@dependabot:registry=https://npm.fury.io/dependabot")
@@ -316,7 +321,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
         it { is_expected.to eq("") }
 
-        context "and credentials for the private source" do
+        context "when dealing with credentials for the private source" do
           let(:credentials) do
             [Dependabot::Credential.new({
               "type" => "git_source",
@@ -337,7 +342,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
                      "always-auth = true")
           end
 
-          context "and an npmrc file" do
+          context "when dealing with an npmrc file" do
             let(:dependency_files) { project_dependency_files("yarn/all_private_env_global_auth") }
 
             it "extends the already existing npmrc" do
@@ -350,7 +355,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
                        "always-auth = true\n")
             end
 
-            context "that uses environment variables everywhere" do
+            context "when it uses environment variables everywhere" do
               let(:dependency_files) { project_dependency_files("yarn/all_private_env_registry") }
 
               it "extends the already existing npmrc" do
@@ -365,7 +370,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
             end
           end
 
-          context "and a yarnrc file" do
+          context "when dealing with a yarnrc file" do
             let(:dependency_files) { project_dependency_files("yarn/all_private_global_registry") }
 
             it "uses the yarnrc file registry" do
@@ -375,7 +380,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               )
             end
 
-            context "that doesn't contain details of the registry" do
+            context "when it doesn't contain details of the registry" do
               let(:dependency_files) { project_dependency_files("yarn/all_private_offline_mirror") }
 
               it "adds a global registry line based on the lockfile details" do
@@ -394,7 +399,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
         it { is_expected.to eq("") }
 
-        context "and credentials for the private source" do
+        context "when dealing with credentials for the private source" do
           let(:credentials) do
             [Dependabot::Credential.new({
               "type" => "git_source",
@@ -411,7 +416,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
                      "always-auth = true")
           end
 
-          context "and an npmrc file" do
+          context "when dealing with an npmrc file" do
             let(:dependency_files) { project_dependency_files("yarn/all_private_env_global_auth") }
 
             it "extends the already existing npmrc" do
@@ -423,7 +428,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
                        "always-auth = true\n")
             end
 
-            context "that uses environment variables everywhere" do
+            context "when it uses environment variables everywhere" do
               let(:dependency_files) { project_dependency_files("yarn/all_private_env_registry") }
 
               it "extends the already existing npmrc" do
@@ -437,7 +442,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
             end
           end
 
-          context "and a yarnrc file" do
+          context "when dealing with a yarnrc file" do
             let(:dependency_files) { project_dependency_files("yarn/all_private_global_registry") }
 
             it "uses the yarnrc file registry" do
@@ -446,7 +451,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               )
             end
 
-            context "that doesn't contain details of the registry" do
+            context "when it doesn't contain details of the registry" do
               let(:dependency_files) { project_dependency_files("yarn/all_private_offline_mirror") }
 
               it "adds a global registry line based on the lockfile details" do
@@ -493,9 +498,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
             "registry" => "registry.npmjs.org"
           })]
         end
+
         it { is_expected.to eq("") }
 
-        context "and an npmrc file" do
+        context "when dealing with an npmrc file" do
           let(:dependency_files) { project_dependency_files("npm6/private_source_npmrc") }
 
           it "does not append to the npmrc file" do
@@ -510,7 +516,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
         it { is_expected.to eq("") }
 
-        context "and some credentials" do
+        context "when dealing with some credentials" do
           let(:credentials) do
             [Dependabot::Credential.new({
               "type" => "git_source",
@@ -523,9 +529,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               "token" => "my_token"
             })]
           end
+
           it { is_expected.to eq("//registry.npmjs.org/:_authToken=my_token") }
 
-          context "that match a scoped package" do
+          context "when it matches a scoped package" do
             let(:credentials) do
               [Dependabot::Credential.new({
                 "type" => "git_source",
@@ -538,6 +545,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
                 "token" => "my_token"
               })]
             end
+
             it "adds auth details, and scopes them correctly" do
               expect(npmrc_content)
                 .to eq("@dependabot:registry=https://npm.fury.io/dependabot\n" \
@@ -580,7 +588,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
         it { is_expected.to eq("") }
 
-        context "and some credentials" do
+        context "when dealing with some credentials" do
           let(:credentials) do
             [Dependabot::Credential.new({
               "type" => "git_source",
@@ -590,9 +598,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               "registry" => "registry.npmjs.org"
             })]
           end
+
           it { is_expected.to eq("") }
 
-          context "that match a scoped package" do
+          context "when it matches a scoped package" do
             let(:credentials) do
               [Dependabot::Credential.new({
                 "type" => "git_source",
@@ -602,13 +611,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
                 "registry" => "npm.fury.io/dependabot"
               })]
             end
+
             it "adds auth details, and scopes them correctly" do
               expect(npmrc_content)
                 .to eq("@dependabot:registry=https://npm.fury.io/dependabot")
             end
           end
 
-          context "that match a scoped package with lowercase escaped slash" do
+          context "when it matches a scoped package with lowercase escaped slash" do
             let(:dependency_files) { project_dependency_files("npm6/private_source_lower") }
             let(:credentials) do
               [Dependabot::Credential.new({
@@ -619,6 +629,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
                 "registry" => "npm.fury.io/dependabot"
               })]
             end
+
             it "adds auth details, and scopes them correctly" do
               expect(npmrc_content)
                 .to eq("@dependabot:registry=https://npm.fury.io/dependabot")
@@ -632,7 +643,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
         it { is_expected.to eq("") }
 
-        context "and credentials for the private source" do
+        context "when dealing with credentials for the private source" do
           let(:credentials) do
             [Dependabot::Credential.new({
               "type" => "git_source",
@@ -675,7 +686,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
             end
           end
 
-          context "and an npmrc file" do
+          context "when dealing with an npmrc file" do
             let(:dependency_files) { project_dependency_files("npm6/all_private_env_global_auth") }
 
             it "populates the already existing npmrc" do
@@ -713,6 +724,57 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               end
             end
           end
+
+          context "when dealing with an npmrc file with timeout" do
+            let(:dependency_files) { project_dependency_files("npm6/npmrc_env_timeout") }
+
+            it "populates the already existing npmrc" do
+              expect(npmrc_content)
+                .to eq("legacy-peer-deps=true\n" \
+                       "loglevel=verbose\n\n" \
+                       "fetch-retries=3\n" \
+                       "fetch-retry-maxtimeout=4\n" \
+                       "fetch-retry-mintimeout=3\n" \
+                       "fetch-timeout=400000\n\n" \
+                       "always-auth = true\n" \
+                       "strict-ssl = true\n" \
+                       "//npm.fury.io/dependabot/:_authToken=secret_token\n" \
+                       "registry = https://npm.fury.io/dependabot\n" \
+                       "//npm.fury.io/dependabot/:_authToken=my_token\n" \
+                       "always-auth = true\n")
+            end
+
+            context "with basic auth credentials" do
+              let(:credentials) do
+                [Dependabot::Credential.new({
+                  "type" => "git_source",
+                  "host" => "github.com",
+                  "username" => "x-access-token",
+                  "password" => "token"
+                }), Dependabot::Credential.new({
+                  "type" => "npm_registry",
+                  "registry" => "npm.fury.io/dependabot",
+                  "token" => "secret:token"
+                })]
+              end
+
+              it "populates the already existing npmrc" do
+                expect(npmrc_content)
+                  .to eq("legacy-peer-deps=true\n" \
+                         "loglevel=verbose\n\n" \
+                         "fetch-retries=3\n" \
+                         "fetch-retry-maxtimeout=4\n" \
+                         "fetch-retry-mintimeout=3\n" \
+                         "fetch-timeout=400000\n\n" \
+                         "always-auth = true\n" \
+                         "strict-ssl = true\n" \
+                         "//npm.fury.io/dependabot/:_authToken=secret_token\n" \
+                         "registry = https://npm.fury.io/dependabot\n" \
+                         "//npm.fury.io/dependabot/:_auth=c2VjcmV0OnRva2Vu\n" \
+                         "always-auth = true\n")
+              end
+            end
+          end
         end
       end
 
@@ -721,7 +783,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
         it { is_expected.to eq("") }
 
-        context "and credentials for the private source" do
+        context "when dealing with credentials for the private source" do
           let(:credentials) do
             [Dependabot::Credential.new({
               "type" => "git_source",
@@ -756,7 +818,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
             end
           end
 
-          context "and an npmrc file" do
+          context "when dealing with an npmrc file" do
             let(:dependency_files) { project_dependency_files("npm6/all_private_env_global_auth") }
 
             it "populates the already existing npmrc" do
@@ -804,7 +866,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
         ]
       end
 
-      context "and a private registry configured that lists a specific dependency" do
+      context "when a private registry configured that lists a specific dependency" do
         let(:credentials) do
           [Dependabot::Credential.new({
             "type" => "npm_registry",
@@ -828,7 +890,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
       end
     end
 
-    context "registry scope generation" do
+    context "when dealing with registry scope generation" do
       let(:credentials) do
         [Dependabot::Credential.new({
           "type" => "npm_registry",
@@ -851,7 +913,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
         end
       end
 
-      context "v3 - when no packages resolve to the private registry" do
+      context "when no packages resolve to the private registry with v3" do
         let(:dependency_files) do
           project_dependency_files("npm9/simple")
         end
@@ -861,7 +923,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
         end
       end
 
-      context "v3 - when a public package of a different scope appears with an npmrc" do
+      context "when a public package of a different scope appears with an npmrc with v3" do
         let(:dependency_files) do
           project_dependency_files("npm9/private-public")
         end

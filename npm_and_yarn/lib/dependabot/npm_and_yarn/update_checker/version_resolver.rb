@@ -1,5 +1,7 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/errors"
 require "dependabot/git_commit_checker"
@@ -21,6 +23,8 @@ module Dependabot
   module NpmAndYarn
     class UpdateChecker
       class VersionResolver
+        extend T::Sig
+
         require_relative "latest_version_finder"
 
         TIGHTLY_COUPLED_MONOREPOS = {
@@ -162,6 +166,7 @@ module Dependabot
 
         private
 
+        sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
         attr_reader :credentials
         attr_reader :dependency_files
@@ -304,6 +309,10 @@ module Dependabot
 
           latest_version = latest_version_finder(original_package).latest_version_from_registry
 
+          # If the latest version is within the scope of the current requirements,
+          # latest_version will be nil. In such cases, there is no update available.
+          return false if latest_version.nil?
+
           original_package_version < latest_version
         end
 
@@ -356,32 +365,34 @@ module Dependabot
           []
         end
 
+        # rubocop:disable Metrics/AbcSize
+        sig { params(message: String).returns(T::Array[T::Hash[String, T.nilable(String)]]) }
         def handle_peer_dependency_errors(message)
           errors = []
           if message.match?(NPM6_PEER_DEP_ERROR_REGEX)
             message.scan(NPM6_PEER_DEP_ERROR_REGEX) do
-              errors << Regexp.last_match.named_captures
+              errors << Regexp.last_match&.named_captures
             end
           elsif message.match?(NPM8_PEER_DEP_ERROR_REGEX)
             message.scan(NPM8_PEER_DEP_ERROR_REGEX) do
-              errors << Regexp.last_match.named_captures
+              errors << T.must(Regexp.last_match).named_captures
             end
           elsif message.match?(YARN_PEER_DEP_ERROR_REGEX)
             message.scan(YARN_PEER_DEP_ERROR_REGEX) do
-              errors << Regexp.last_match.named_captures
+              errors << T.must(Regexp.last_match).named_captures
             end
           elsif message.match?(YARN_BERRY_PEER_DEP_ERROR_REGEX)
             message.scan(YARN_BERRY_PEER_DEP_ERROR_REGEX) do
-              errors << Regexp.last_match.named_captures
+              errors << T.must(Regexp.last_match).named_captures
             end
           elsif message.match?(YARN_BERRY_V4_PEER_DEP_ERROR_REGEX)
             message.scan(YARN_BERRY_V4_PEER_DEP_ERROR_REGEX) do
-              errors << Regexp.last_match.named_captures
+              errors << T.must(Regexp.last_match).named_captures
             end
           elsif message.match?(PNPM_PEER_DEP_ERROR_REGEX)
             message.scan(PNPM_PEER_DEP_ERROR_REGEX) do
-              captures = Regexp.last_match.named_captures
-              captures["requiring_dep"].tr!(" ", "@")
+              captures = T.must(Regexp.last_match).named_captures
+              T.must(captures["requiring_dep"]).tr!(" ", "@")
               errors << captures
             end
           else
@@ -389,6 +400,7 @@ module Dependabot
           end
           errors
         end
+        # rubocop:enable Metrics/AbcSize
 
         def unmet_peer_dependencies
           peer_dependency_errors
@@ -401,6 +413,8 @@ module Dependabot
         end
 
         def error_details_from_captures(captures)
+          return {} unless captures.is_a?(Hash)
+
           required_dep_captures  = captures.fetch("required_dep")
           requiring_dep_captures = captures.fetch("requiring_dep")
           return {} unless required_dep_captures && requiring_dep_captures
@@ -537,11 +551,17 @@ module Dependabot
           npm_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.package_locks, path: path)
           return run_npm_checker(path: path, version: version) if npm_lockfiles.any?
 
+          bun_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.bun_locks, path: path)
+          return run_bun_checker(path: path, version: version) if bun_lockfiles.any?
+
           root_yarn_lock = dependency_files_builder.root_yarn_lock
           return run_yarn_checker(path: path, version: version, lockfile: root_yarn_lock) if root_yarn_lock
 
           root_pnpm_lock = dependency_files_builder.root_pnpm_lock
           return run_pnpm_checker(path: path, version: version) if root_pnpm_lock
+
+          root_bun_lock = dependency_files_builder.root_bun_lock
+          return run_bun_checker(path: path, version: version) if root_bun_lock
 
           run_npm_checker(path: path, version: version)
         rescue SharedHelpers::HelperSubprocessFailed => e
@@ -567,6 +587,17 @@ module Dependabot
                   error_context: {}
                 )
               end
+            end
+          end
+        end
+
+        def run_bun_checker(path:, version:)
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            Dir.chdir(path) do
+              Helpers.run_bun_command(
+                "update #{dependency.name}@#{version} --save-text-lockfile",
+                fingerprint: "update <dependency_name>@<version> --save-text-lockfile"
+              )
             end
           end
         end
@@ -650,7 +681,7 @@ module Dependabot
           git_source = dependency.requirements.find { |req| req[:source] && req[:source][:type] == "git" }
 
           if git_source
-            "#{dependency.name}@#{git_req[:source][:url]}##{version}"
+            "#{dependency.name}@#{git_source[:source][:url]}##{version}"
           else
             "#{dependency.name}@#{version}"
           end
@@ -715,7 +746,7 @@ module Dependabot
         end
 
         def version_regex
-          version_class::VERSION_PATTERN
+          Dependabot::NpmAndYarn::Version::VERSION_PATTERN
         end
       end
     end

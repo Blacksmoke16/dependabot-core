@@ -8,11 +8,6 @@ require "dependabot/composer/file_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Composer::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  let(:files) { project_dependency_files(project_name) }
-  let(:project_name) { "minor_version" }
-  let(:parser) { described_class.new(dependency_files: files, source: source) }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -20,6 +15,11 @@ RSpec.describe Dependabot::Composer::FileParser do
       directory: "/"
     )
   end
+  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:project_name) { "minor_version" }
+  let(:files) { project_dependency_files(project_name) }
+
+  it_behaves_like "a dependency file parser"
 
   describe "parse" do
     subject(:dependencies) { parser.parse }
@@ -33,6 +33,7 @@ RSpec.describe Dependabot::Composer::FileParser do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("monolog/monolog") }
         its(:version) { is_expected.to eq("1.0.2") }
+
         its(:requirements) do
           is_expected.to eq(
             [{
@@ -49,43 +50,41 @@ RSpec.describe Dependabot::Composer::FileParser do
       end
     end
 
-    context "null dependencies with lockfile" do
+    context "when using null dependencies with lockfile" do
       let(:project_name) { "null_dependencies_with_lockfile" }
       let(:name) { "phpunit/phpunit" }
       let(:type) { "development" }
+
       describe "no dependencies" do
         subject { dependencies }
+
         its(:length) { is_expected.to be >= 0 }
       end
     end
 
-    context "with a version specified (composer v1)" do
-      let(:project_name) { "v1/minor_version" }
+    context "with the local package as dependency" do
+      before do
+        Dependabot::Experiments.register(:exclude_local_composer_packages, true)
+      end
 
-      describe "the first dependency" do
-        subject { dependencies.first }
+      after do
+        Dependabot::Experiments.register(:exclude_local_composer_packages, false)
+      end
 
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("monolog/monolog") }
-        its(:version) { is_expected.to eq("1.0.2") }
-        its(:requirements) do
-          is_expected.to eq(
-            [{
-              requirement: "1.0.*",
-              file: "composer.json",
-              groups: ["runtime"],
-              source: {
-                type: "git",
-                url: "https://github.com/Seldaek/monolog.git"
-              }
-            }]
-          )
-        end
+      let(:project_name) { "local_package_as_dep" }
+
+      its(:length) { is_expected.to eq(4) }
+
+      describe "top level dependencies" do
+        subject { dependencies.select(&:top_level?) }
+
+        its(:length) { is_expected.to eq(2) }
       end
     end
 
     context "with doctored entries" do
       let(:project_name) { "doctored" }
+
       its(:length) { is_expected.to eq(2) }
     end
 
@@ -96,14 +95,16 @@ RSpec.describe Dependabot::Composer::FileParser do
         subject { dependencies.first }
 
         it { is_expected.to be_a(Dependabot::Dependency) }
+
         its(:name) do
           is_expected.to eq("wpackagist-plugin/ga-google-analytics")
         end
+
         its(:version) { is_expected.to eq("20180828") }
       end
     end
 
-    context "for development dependencies" do
+    context "when using development dependencies" do
       let(:project_name) { "development_dependencies" }
 
       it "includes development dependencies" do
@@ -116,6 +117,7 @@ RSpec.describe Dependabot::Composer::FileParser do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("monolog/monolog") }
         its(:version) { is_expected.to eq("1.0.1") }
+
         its(:requirements) do
           is_expected.to eq(
             [{
@@ -139,6 +141,7 @@ RSpec.describe Dependabot::Composer::FileParser do
 
       describe "top level dependencies" do
         subject { dependencies.select(&:top_level?) }
+
         its(:length) { is_expected.to eq(2) }
       end
     end
@@ -150,6 +153,7 @@ RSpec.describe Dependabot::Composer::FileParser do
 
       describe "top level dependencies" do
         subject { dependencies.select(&:top_level?) }
+
         its(:length) { is_expected.to eq(2) }
       end
 
@@ -196,9 +200,11 @@ RSpec.describe Dependabot::Composer::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("monolog/monolog") }
+
         its(:version) do
           is_expected.to eq("5267b03b1e4861c4657ede17a88f13ef479db482")
         end
+
         its(:requirements) do
           is_expected.to eq(
             [{
@@ -215,7 +221,7 @@ RSpec.describe Dependabot::Composer::FileParser do
           )
         end
 
-        context "specified as an alias" do
+        context "when the requirement specified as an alias" do
           let(:project_name) { "git_source_alias" }
 
           its(:requirements) do
@@ -235,7 +241,7 @@ RSpec.describe Dependabot::Composer::FileParser do
           end
         end
 
-        context "due to a stability flag" do
+        context "when dealing with a stability flag" do
           subject { dependencies.last }
 
           let(:project_name) { "git_source_transitive" }
@@ -276,6 +282,7 @@ RSpec.describe Dependabot::Composer::FileParser do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("path_dep/path_dep") }
         its(:version) { is_expected.to eq("1.0.1") }
+
         its(:requirements) do
           is_expected.to eq(
             [{
@@ -300,6 +307,7 @@ RSpec.describe Dependabot::Composer::FileParser do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("monolog/monolog") }
         its(:version) { is_expected.to be_nil }
+
         its(:requirements) do
           is_expected.to eq(
             [{
@@ -312,7 +320,7 @@ RSpec.describe Dependabot::Composer::FileParser do
         end
       end
 
-      context "for development dependencies" do
+      context "when using development dependencies" do
         let(:project_name) { "development_dependencies_without_lockfile" }
 
         it "includes development dependencies" do
@@ -325,6 +333,7 @@ RSpec.describe Dependabot::Composer::FileParser do
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("monolog/monolog") }
           its(:version) { is_expected.to be_nil }
+
           its(:requirements) do
             is_expected.to eq(
               [{
@@ -340,6 +349,7 @@ RSpec.describe Dependabot::Composer::FileParser do
 
       context "with the PHP version specified" do
         let(:project_name) { "php_specified_without_lockfile" }
+
         its(:length) { is_expected.to eq(2) }
       end
 
@@ -356,6 +366,7 @@ RSpec.describe Dependabot::Composer::FileParser do
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("monolog/monolog") }
           its(:version) { is_expected.to be_nil }
+
           its(:requirements) do
             is_expected.to eq(
               [{
@@ -390,6 +401,41 @@ RSpec.describe Dependabot::Composer::FileParser do
             expect(error.file_name).to eq("composer.json")
           end
       end
+    end
+  end
+
+  describe "#ecosystem" do
+    it "returns the correct ecosystem" do
+      expect(parser.ecosystem).to be_a(Dependabot::Ecosystem)
+    end
+
+    it "returns package manager with version" do
+      expect(parser.ecosystem.package_manager).to be_a(Dependabot::Composer::PackageManager)
+      expect(parser.ecosystem.package_manager.version).to eq("2.7.7")
+    end
+
+    it "returns language with version" do
+      expect(parser.ecosystem.language).to be_a(Dependabot::Composer::Language)
+      expect(parser.ecosystem.language.version.to_s).to eq("8.2.28")
+    end
+  end
+
+  describe "REQUIREMENT_SEPARATOR" do
+    let(:requirements) do
+      [
+        "php >=7.4 || php >=8.0",
+        "php >=7.4, || php >=8.0",
+        "php >=7.4 |||| php >=8.0"
+      ]
+    end
+
+    it "splits requirements correctly" do
+      results = requirements.map { |req| req.split(Dependabot::Composer::REQUIREMENT_SEPARATOR) }
+      expect(results).to eq([
+        ["php >=7.4", "php >=8.0"],
+        ["php >=7.4", "php >=8.0"],
+        ["php >=7.4", "", "php >=8.0"]
+      ])
     end
   end
 end

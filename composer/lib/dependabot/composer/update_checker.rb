@@ -72,7 +72,7 @@ module Dependabot
       end
 
       def requirements_unlocked_or_can_be?
-        requirements_update_strategy != RequirementsUpdateStrategy::LockfileOnly
+        !requirements_update_strategy.lockfile_only?
       end
 
       def requirements_update_strategy
@@ -139,8 +139,8 @@ module Dependabot
 
       def composer_file
         composer_file =
-          dependency_files.find { |f| f.name == "composer.json" }
-        raise "No composer.json!" unless composer_file
+          dependency_files.find { |f| f.name == PackageManager::MANIFEST_FILENAME }
+        raise "No #{PackageManager::MANIFEST_FILENAME}!" unless composer_file
 
         composer_file
       end

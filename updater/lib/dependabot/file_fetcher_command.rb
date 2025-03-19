@@ -77,9 +77,15 @@ module Dependabot
       # Use the provided directory or fallback to job.source.directory if directory is nil.
       directory_to_use = directory || job.source.directory
 
+      job_definition = Environment.job_definition
+      job_credentials_metadata = job_definition.fetch("job", {}).fetch("credentials-metadata", [])
+
+      # prefer credentials directly from the root of the file (will contain secrets) but if not specified, fall back to
+      # the job's credentials-metadata that has no secrets
+      credentials = job_definition.fetch("credentials", job_credentials_metadata)
       args = {
         source: job.source.clone.tap { |s| s.directory = directory_to_use },
-        credentials: Environment.job_definition.fetch("credentials", []),
+        credentials: credentials,
         options: job.experiments
       }
       args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || already_cloned?
@@ -99,20 +105,10 @@ module Dependabot
       @file_fetchers[directory] ||= create_file_fetcher(directory: directory)
     end
 
+    # rubocop:disable Metrics/PerceivedComplexity
     def dependency_files_for_multi_directories
-      if Dependabot::Experiments.enabled?(:globs)
-        return @dependency_files_for_multi_directories ||= dependency_files_for_globs
-      end
+      return @dependency_files_for_multi_directories if defined?(@dependency_files_for_multi_directories)
 
-      @dependency_files_for_multi_directories ||= job.source.directories.flat_map do |dir|
-        ff = with_retries { file_fetcher_for_directory(dir) }
-        files = ff.files
-        post_ecosystem_versions(ff) if should_record_ecosystem_versions?
-        files
-      end
-    end
-
-    def dependency_files_for_globs
       has_glob = T.let(false, T::Boolean)
       directories = Dir.chdir(job.repo_contents_path) do
         job.source.directories.map do |dir|
@@ -120,11 +116,11 @@ module Dependabot
 
           has_glob = true
           dir = dir.delete_prefix("/")
-          Dir.glob(dir, File::FNM_DOTMATCH).select { |d| File.directory?(d) }
+          Dir.glob(dir, File::FNM_DOTMATCH).select { |d| File.directory?(d) }.map { |d| "/#{d}" }
         end.flatten
-      end
+      end.uniq
 
-      directories.flat_map do |dir|
+      @dependency_files_for_multi_directories = directories.flat_map do |dir|
         ff = with_retries { file_fetcher_for_directory(dir) }
 
         begin
@@ -139,7 +135,14 @@ module Dependabot
         post_ecosystem_versions(ff) if should_record_ecosystem_versions?
         files
       end.compact
+
+      if @dependency_files_for_multi_directories.empty?
+        raise Dependabot::DependencyFileNotFound, job.source.directories.join(", ")
+      end
+
+      @dependency_files_for_multi_directories
     end
+    # rubocop:enable Metrics/PerceivedComplexity
 
     def dependency_files
       return @dependency_files if defined?(@dependency_files)

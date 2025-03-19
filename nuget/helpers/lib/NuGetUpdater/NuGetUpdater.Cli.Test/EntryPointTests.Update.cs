@@ -1,7 +1,5 @@
-using System;
 using System.IO;
 using System.Text;
-using System.Threading.Tasks;
 
 using NuGetUpdater.Core;
 using NuGetUpdater.Core.Test;
@@ -21,17 +19,27 @@ public partial class EntryPointTests
             await Run(path =>
                 [
                     "update",
+                    "--job-id",
+                    "TEST-JOB-ID",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--solution-or-project",
                     Path.Combine(path, "path/to/solution.sln"),
                     "--dependency",
-                    "Newtonsoft.Json",
+                    "Some.package",
                     "--new-version",
                     "13.0.1",
                     "--previous-version",
                     "7.0.1",
                 ],
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net45"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net45"),
+                ],
+                initialFiles:
                 [
                     ("path/to/solution.sln", """
                         Microsoft Visual Studio Solution File, Format Version 12.00
@@ -41,19 +49,19 @@ public partial class EntryPointTests
                         Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "my", "my.csproj", "{782E0C0A-10D3-444D-9640-263D03D2B20C}"
                         EndProject
                         Global
-                          GlobalSection(SolutionConfigurationPlatforms) = preSolution
+                            GlobalSection(SolutionConfigurationPlatforms) = preSolution
                             Debug|Any CPU = Debug|Any CPU
                             Release|Any CPU = Release|Any CPU
-                          EndGlobalSection
-                          GlobalSection(ProjectConfigurationPlatforms) = postSolution
+                            EndGlobalSection
+                            GlobalSection(ProjectConfigurationPlatforms) = postSolution
                             {782E0C0A-10D3-444D-9640-263D03D2B20C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
                             {782E0C0A-10D3-444D-9640-263D03D2B20C}.Debug|Any CPU.Build.0 = Debug|Any CPU
                             {782E0C0A-10D3-444D-9640-263D03D2B20C}.Release|Any CPU.ActiveCfg = Release|Any CPU
                             {782E0C0A-10D3-444D-9640-263D03D2B20C}.Release|Any CPU.Build.0 = Release|Any CPU
-                          EndGlobalSection
-                          GlobalSection(SolutionProperties) = preSolution
+                            EndGlobalSection
+                            GlobalSection(SolutionProperties) = preSolution
                             HideSolutionNode = FALSE
-                          EndGlobalSection
+                            EndGlobalSection
                         EndGlobal
                         """),
                     ("path/to/my.csproj", """
@@ -66,8 +74,8 @@ public partial class EntryPointTests
                             <None Include="packages.config" />
                           </ItemGroup>
                           <ItemGroup>
-                            <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
-                              <HintPath>packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+                            <Reference Include="Some.Package">
+                              <HintPath>packages\Some.Package.7.0.1\lib\net45\Some.Package.dll</HintPath>
                               <Private>True</Private>
                             </Reference>
                           </ItemGroup>
@@ -76,10 +84,11 @@ public partial class EntryPointTests
                         """),
                     ("path/to/packages.config", """
                         <packages>
-                          <package id="Newtonsoft.Json" version="7.0.1" targetFramework="net45" />
+                          <package id="Some.Package" version="7.0.1" targetFramework="net45" />
                         </packages>
                         """)
-                ],
+                      ],
+                expectedFiles:
                 [
                     ("path/to/my.csproj", """
                         <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -91,8 +100,8 @@ public partial class EntryPointTests
                             <None Include="packages.config" />
                           </ItemGroup>
                           <ItemGroup>
-                            <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
-                              <HintPath>packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+                            <Reference Include="Some.Package">
+                              <HintPath>packages\Some.Package.13.0.1\lib\net45\Some.Package.dll</HintPath>
                               <Private>True</Private>
                             </Reference>
                           </ItemGroup>
@@ -102,10 +111,11 @@ public partial class EntryPointTests
                     ("path/to/packages.config", """
                         <?xml version="1.0" encoding="utf-8"?>
                         <packages>
-                          <package id="Newtonsoft.Json" version="13.0.1" targetFramework="net45" />
+                          <package id="Some.Package" version="13.0.1" targetFramework="net45" />
                         </packages>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
@@ -114,18 +124,27 @@ public partial class EntryPointTests
             await Run(path =>
                 [
                     "update",
+                    "--job-id",
+                    "TEST-JOB-ID",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--solution-or-project",
                     Path.Combine(path, "path/to/my.csproj"),
                     "--dependency",
-                    "Newtonsoft.Json",
+                    "Some.Package",
                     "--new-version",
                     "13.0.1",
                     "--previous-version",
-                    "7.0.1",
-                    "--verbose"
+                    "7.0.1"
                 ],
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net45"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net45"),
+                ],
+                initialFiles:
                 [
                     ("path/to/my.csproj", """
                         <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -137,8 +156,8 @@ public partial class EntryPointTests
                             <None Include="packages.config" />
                           </ItemGroup>
                           <ItemGroup>
-                            <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
-                              <HintPath>packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+                            <Reference Include="Some.Package">
+                              <HintPath>packages\Some.Package.7.0.1\lib\net45\Some.Package.dll</HintPath>
                               <Private>True</Private>
                             </Reference>
                           </ItemGroup>
@@ -147,10 +166,11 @@ public partial class EntryPointTests
                         """),
                     ("path/to/packages.config", """
                         <packages>
-                          <package id="Newtonsoft.Json" version="7.0.1" targetFramework="net45" />
+                          <package id="Some.Package" version="7.0.1" targetFramework="net45" />
                         </packages>
                         """)
                 ],
+                expectedFiles:
                 [
                     ("path/to/my.csproj", """
                         <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -162,8 +182,8 @@ public partial class EntryPointTests
                             <None Include="packages.config" />
                           </ItemGroup>
                           <ItemGroup>
-                            <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
-                              <HintPath>packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+                            <Reference Include="Some.Package">
+                              <HintPath>packages\Some.Package.13.0.1\lib\net45\Some.Package.dll</HintPath>
                               <Private>True</Private>
                             </Reference>
                           </ItemGroup>
@@ -173,10 +193,11 @@ public partial class EntryPointTests
                     ("path/to/packages.config", """
                         <?xml version="1.0" encoding="utf-8"?>
                         <packages>
-                          <package id="Newtonsoft.Json" version="13.0.1" targetFramework="net45" />
+                          <package id="Some.Package" version="13.0.1" targetFramework="net45" />
                         </packages>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
@@ -185,17 +206,25 @@ public partial class EntryPointTests
             await Run(path =>
                 [
                     "update",
+                    "--job-id",
+                    "TEST-JOB-ID",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--solution-or-project",
                     $"{path}/some-dir/dirs.proj",
                     "--dependency",
-                    "NuGet.Versioning",
+                    "Some.Package",
                     "--new-version",
                     "6.6.1",
                     "--previous-version",
-                    "6.1.0",
-                    "--verbose"
+                    "6.1.0"
+                ],
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "6.1.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "6.6.1", "net8.0"),
                 ],
                 initialFiles:
                 [
@@ -211,12 +240,12 @@ public partial class EntryPointTests
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
                             <OutputType>Exe</OutputType>
-                            <TargetFramework>net6.0</TargetFramework>
+                            <TargetFramework>net8.0</TargetFramework>
                             <ImplicitUsings>enable</ImplicitUsings>
                             <Nullable>enable</Nullable>
                           </PropertyGroup>
                           <ItemGroup>
-                            <PackageReference Include="NuGet.Versioning" Version="6.1.0" />
+                            <PackageReference Include="Some.Package" Version="6.1.0" />
                           </ItemGroup>
                         </Project>
                         """),
@@ -224,20 +253,20 @@ public partial class EntryPointTests
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
                             <OutputType>Exe</OutputType>
-                            <TargetFramework>net6.0</TargetFramework>
+                            <TargetFramework>net8.0</TargetFramework>
                             <ImplicitUsings>enable</ImplicitUsings>
                             <Nullable>enable</Nullable>
                           </PropertyGroup>
                           <ItemGroup>
-                            <PackageReference Include="NuGet.Versioning" Version="6.1.0" />
+                            <PackageReference Include="Some.Package" Version="6.1.0" />
                           </ItemGroup>
                         </Project>
                         """),
                     ("other-dir/Directory.Build.props", """
                         <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                        
+
                           <ItemGroup>
-                            <PackageReference Include="NuGet.Versioning" Version="6.1.0" />
+                            <PackageReference Include="Some.Package" Version="6.1.0" />
                           </ItemGroup>
 
                         </Project>
@@ -253,17 +282,16 @@ public partial class EntryPointTests
                           </ItemGroup>
                         </Project>
                         """),
-                    ("some-dir/project1/project.csproj",
-                        """
+                    ("some-dir/project1/project.csproj", """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
                             <OutputType>Exe</OutputType>
-                            <TargetFramework>net6.0</TargetFramework>
+                            <TargetFramework>net8.0</TargetFramework>
                             <ImplicitUsings>enable</ImplicitUsings>
                             <Nullable>enable</Nullable>
                           </PropertyGroup>
                           <ItemGroup>
-                            <PackageReference Include="NuGet.Versioning" Version="6.6.1" />
+                            <PackageReference Include="Some.Package" Version="6.6.1" />
                           </ItemGroup>
                         </Project>
                         """),
@@ -271,20 +299,20 @@ public partial class EntryPointTests
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
                             <OutputType>Exe</OutputType>
-                            <TargetFramework>net6.0</TargetFramework>
+                            <TargetFramework>net8.0</TargetFramework>
                             <ImplicitUsings>enable</ImplicitUsings>
                             <Nullable>enable</Nullable>
                           </PropertyGroup>
                           <ItemGroup>
-                            <PackageReference Include="NuGet.Versioning" Version="6.6.1" />
+                            <PackageReference Include="Some.Package" Version="6.6.1" />
                           </ItemGroup>
                         </Project>
                         """),
                     ("other-dir/Directory.Build.props", """
                         <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                        
+
                           <ItemGroup>
-                            <PackageReference Include="NuGet.Versioning" Version="6.1.0" />
+                            <PackageReference Include="Some.Package" Version="6.1.0" />
                           </ItemGroup>
 
                         </Project>
@@ -303,6 +331,15 @@ public partial class EntryPointTests
             // test this, it must be tested in a new process where MSBuild has not been loaded yet and the runner tool
             // must be started with its working directory at the test repo's root.
             using var tempDir = new TemporaryDirectory();
+
+            MockNuGetPackage[] testPackages =
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+            ];
+            await MockNuGetPackagesInDirectory(testPackages, tempDir.DirectoryPath);
+            await MockJobFileInDirectory(tempDir.DirectoryPath);
+
             var globalJsonPath = Path.Join(tempDir.DirectoryPath, "global.json");
             var srcGlobalJsonPath = Path.Join(tempDir.DirectoryPath, "src", "global.json");
             string globalJsonContent = """
@@ -322,26 +359,29 @@ public partial class EntryPointTests
                     <TargetFramework>net8.0</TargetFramework>
                   </PropertyGroup>
                   <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="7.0.1" />
+                    <PackageReference Include="Some.Package" Version="7.0.1" />
                   </ItemGroup>
                 </Project>
                 """);
-            var executableName = $"NuGetUpdater.Cli{(Environment.OSVersion.Platform == PlatformID.Win32NT ? ".exe" : "")}";
-            var executableArgs = string.Join(" ",
-            [
+            var executableName = Path.Join(Path.GetDirectoryName(GetType().Assembly.Location), "NuGetUpdater.Cli.dll");
+            IEnumerable<string> executableArgs = [
+                executableName,
                 "update",
+                "--job-id",
+                "TEST-JOB-ID",
+                "--job-path",
+                Path.Combine(tempDir.DirectoryPath, "job.json"),
                 "--repo-root",
                 tempDir.DirectoryPath,
                 "--solution-or-project",
                 projectPath,
                 "--dependency",
-                "Newtonsoft.Json",
+                "Some.Package",
                 "--new-version",
                 "13.0.1",
                 "--previous-version",
-                "7.0.1",
-                "--verbose"
-            ]);
+                "7.0.1"
+            ];
 
             // verify base run
             var workingDirectory = tempDir.DirectoryPath;
@@ -350,7 +390,7 @@ public partial class EntryPointTests
                 workingDirectory = Path.Join(workingDirectory, workingDirectoryPath);
             }
 
-            var (exitCode, output, error) = await ProcessEx.RunAsync(executableName, executableArgs, workingDirectory: workingDirectory);
+            var (exitCode, output, error) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(executableArgs, workingDirectory, new ExperimentsManager() { InstallDotnetSdks = false });
             Assert.True(exitCode == 0, $"Error running update on unsupported SDK.\nSTDOUT:\n{output}\nSTDERR:\n{error}");
 
             // verify project update
@@ -366,7 +406,7 @@ public partial class EntryPointTests
             Assert.Contains("99.99.99", updatedGlobalJsonContents);
         }
 
-        private static async Task Run(Func<string, string[]> getArgs, (string Path, string Content)[] initialFiles, (string, string)[] expectedFiles)
+        private static async Task Run(Func<string, string[]> getArgs, (string Path, string Content)[] initialFiles, (string, string)[] expectedFiles, MockNuGetPackage[]? packages = null)
         {
             var actualFiles = await RunUpdate(initialFiles, async path =>
             {
@@ -380,6 +420,9 @@ public partial class EntryPointTests
 
                 try
                 {
+                    await MockJobFileInDirectory(path);
+                    await MockNuGetPackagesInDirectory(packages, path);
+
                     var args = getArgs(path);
                     var result = await Program.Main(args);
                     if (result != 0)

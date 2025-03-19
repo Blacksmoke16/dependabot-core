@@ -14,7 +14,6 @@ AllCops:
     - "*/spec/fixtures/**/*"
     - "vendor/**/*"
     - "dry-run/**/*"
-    - "bundler/helpers/v1/patched_bundler"
     - "bundler/helpers/spec_helpers/*"
   NewCops: enable
   TargetRubyVersion: 3.1
@@ -231,6 +230,8 @@ Performance/UnfreezeString:
   Enabled: true
 Performance/UriDefaultParser:
   Enabled: true
+RSpec/IndexedLet:
+  Enabled: false
 Style/AccessorGrouping:
   EnforcedStyle: 'separated'
 Style/ArgumentsForwarding:
@@ -339,6 +340,7 @@ Style/SpecialGlobalVars:
 Style/SelectByRegexp:
   Enabled: false
 Sorbet/TrueSigil:
+  Enabled: true
   Exclude:
     - "**/spec/**/*"
 Sorbet/StrictSigil:

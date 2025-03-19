@@ -1,14 +1,20 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
+require "dependabot/ecosystem"
+require "dependabot/silent/package_manager"
+require "sorbet-runtime"
 
 module SilentPackageManager
   class FileParser < Dependabot::FileParsers::Base
+    extend T::Sig
+
     require "dependabot/file_parsers/base/dependency_set"
 
+    sig { override.returns(T::Array[Dependabot::Dependency]) }
     def parse
       dependency_set = DependencySet.new
 
@@ -22,8 +28,28 @@ module SilentPackageManager
       raise Dependabot::DependencyFileNotParseable, T.must(dependency_files.first).path
     end
 
+    sig { returns(Dependabot::Ecosystem) }
+    def ecosystem
+      meta_data = JSON.parse(manifest_content)["silent"]
+      silent_version = if meta_data.nil?
+                         "2"
+                       else
+                         meta_data["version"]
+                       end
+      @ecosystem ||= T.let(
+        Dependabot::Ecosystem.new(
+          name: Dependabot::Silent::ECOSYSYEM,
+          package_manager: Dependabot::Silent::PackageManager.new(silent_version)
+        ),
+        T.nilable(Dependabot::Ecosystem)
+      )
+    rescue JSON::ParserError
+      raise Dependabot::DependencyFileNotParseable, T.must(dependency_files.first).path
+    end
+
     private
 
+    sig { params(name: String, info: String).returns(Dependabot::Dependency) }
     def parse_single_dependency(name, info)
       Dependabot::Dependency.new(
         name: name,
@@ -40,19 +66,22 @@ module SilentPackageManager
 
     # To match the behavior of npm_and_yarn, this returns one Dependency but has
     # a metadata field that includes all the versions of the Dependency.
+    sig { params(name: String, info: String).returns(Dependabot::Dependency) }
     def parse_multiple_dependency(name, info)
-      dependencies = info["versions"].map do |version|
+      dependencies = Array(info["versions"]).map do |version|
         info["version"] = version
         parse_single_dependency(name, info)
       end
-      dependencies.last.metadata[:all_versions] = dependencies
-      dependencies.last
+      T.must(dependencies.last).metadata[:all_versions] = dependencies
+      T.must(dependencies.last)
     end
 
+    sig { returns(String) }
     def manifest_content
       T.must(T.must(dependency_files.first).content)
     end
 
+    sig { override.void }
     def check_required_files
       # Just check if there are any files at all.
       return if dependency_files.any?

@@ -10,6 +10,7 @@ public partial class DiscoveryWorkerTests
         public async Task DiscoversDependencies()
         {
             await TestDiscoveryAsync(
+                packages: [],
                 workspacePath: "",
                 files: [
                     ("global.json", """
@@ -25,7 +26,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "",
+                    Path = "",
                     GlobalJson = new()
                     {
                         FilePath = "global.json",
@@ -35,19 +36,55 @@ public partial class DiscoveryWorkerTests
                         ]
                     },
                     ExpectedProjectCount = 0,
-                });
+                }
+            );
+        }
+
+        [Fact]
+        public async Task DiscoversDependencies_HandlesTrailingComma()
+        {
+            await TestDiscoveryAsync(
+                packages: [],
+                workspacePath: "",
+                files: [
+                    ("global.json", """
+                        {
+                          "sdk": {
+                            "version": "2.2.104"
+                          },
+                          "msbuild-sdks": {
+                            "Microsoft.Build.Traversal": "1.0.45"
+                          },
+                        }
+                        """),
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    GlobalJson = new()
+                    {
+                        FilePath = "global.json",
+                        Dependencies = [
+                            new("Microsoft.NET.Sdk", "2.2.104", DependencyType.MSBuildSdk),
+                            new("Microsoft.Build.Traversal", "1.0.45", DependencyType.MSBuildSdk),
+                        ]
+                    },
+                    ExpectedProjectCount = 0,
+                }
+            );
         }
 
         [Fact]
         public async Task ReportsFailure()
         {
             await TestDiscoveryAsync(
+                packages: [],
                 workspacePath: "",
                 files: [
                     ("global.json", """
                         {
                           "sdk": {
-                            "version": "2.2.104",
+                            "version": "2.2.104", INVALID JSON
                           },
                           "msbuild-sdks": {
                             "Microsoft.Build.Traversal": "1.0.45"
@@ -57,7 +94,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "",
+                    Path = "",
                     GlobalJson = new()
                     {
                         FilePath = "global.json",
@@ -65,7 +102,8 @@ public partial class DiscoveryWorkerTests
                         ExpectedDependencyCount = 0,
                     },
                     ExpectedProjectCount = 0,
-                });
+                }
+            );
         }
     }
 }

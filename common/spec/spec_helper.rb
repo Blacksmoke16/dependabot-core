@@ -13,6 +13,7 @@ require "uri"
 
 # SimpleCov _must_ be started before any dependabot code is loaded
 SimpleCov.start do
+  command_name "test-process-#{ENV.fetch('TEST_ENV_NUMBER', 1)}"
   add_filter "/spec/"
   if ENV["CI"]
     formatter SimpleCov::Formatter::SimpleFormatter
@@ -191,5 +192,22 @@ def github_credentials
       "username" => "x-access-token",
       "password" => ENV["DEPENDABOT_TEST_ACCESS_TOKEN"] || ENV.fetch("LOCAL_GITHUB_ACCESS_TOKEN", nil)
     }]
+  end
+end
+
+# Load a command from the fixtures/commands directory
+def command_fixture(name)
+  path = File.join("spec", "fixtures", "commands", name)
+  raise "Command fixture '#{name}' does not exist" unless File.exist?(path)
+
+  File.expand_path(path)
+end
+
+# Define an anonymous subclass of Dependabot::Requirement for testing purposes
+TestRequirement = Class.new(Dependabot::Requirement) do
+  # Initialize with comma-separated requirement constraints
+  def initialize(constraint_string)
+    requirements = constraint_string.split(",").map(&:strip)
+    super(requirements)
   end
 end

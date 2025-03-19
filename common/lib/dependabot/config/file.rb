@@ -58,11 +58,14 @@ module Dependabot
       private
 
       PACKAGE_MANAGER_LOOKUP = T.let({
+        "bun" => "bun",
         "bundler" => "bundler",
         "cargo" => "cargo",
         "composer" => "composer",
         "devcontainer" => "devcontainers",
         "docker" => "docker",
+        "docker-compose" => "docker_compose",
+        "dotnet-sdk" => "dotnet_sdk",
         "elm" => "elm",
         "github-actions" => "github_actions",
         "gitsubmodule" => "submodules",
@@ -70,13 +73,15 @@ module Dependabot
         "gradle" => "gradle",
         "maven" => "maven",
         "mix" => "hex",
+        "helm" => "helm",
         "nuget" => "nuget",
         "npm" => "npm_and_yarn",
         "pip" => "pip",
         "pub" => "pub",
         "swift" => "swift",
         "shards" => "shards",
-        "terraform" => "terraform"
+        "terraform" => "terraform",
+        "uv" => "uv"
       }.freeze, T::Hash[String, String])
 
       sig { params(cfg: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Array[IgnoreCondition]) }

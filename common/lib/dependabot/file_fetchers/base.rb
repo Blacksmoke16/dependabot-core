@@ -93,12 +93,13 @@ module Dependabot
       #
       # options supports custom feature enablement
       sig do
-        params(
-          source: Dependabot::Source,
-          credentials: T::Array[Dependabot::Credential],
-          repo_contents_path: T.nilable(String),
-          options: T::Hash[String, String]
-        )
+        overridable
+          .params(
+            source: Dependabot::Source,
+            credentials: T::Array[Dependabot::Credential],
+            repo_contents_path: T.nilable(String),
+            options: T::Hash[String, String]
+          )
           .void
       end
       def initialize(source:, credentials:, repo_contents_path: nil, options: {})
@@ -125,6 +126,11 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def target_branch
         source.branch
+      end
+
+      sig { returns(T::Boolean) }
+      def allow_beta_ecosystems?
+        Experiments.enabled?(:enable_beta_ecosystems)
       end
 
       sig { returns(T::Array[DependencyFile]) }
@@ -310,7 +316,7 @@ module Dependabot
 
         SharedHelpers.with_git_configured(credentials: credentials) do
           Dir.chdir(T.must(repo_contents_path)) do
-            return SharedHelpers.run_shell_command("git rev-parse HEAD").strip
+            return SharedHelpers.run_shell_command("git rev-parse HEAD", stderr_to_stdout: false).strip
           end
         end
       end

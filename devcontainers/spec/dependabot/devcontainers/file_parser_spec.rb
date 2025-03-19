@@ -9,12 +9,11 @@ require "dependabot/devcontainers/requirement"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Devcontainers::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  let(:parser) do
-    described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path)
+  let(:dependencies) { parser.parse }
+  let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+  let(:files) do
+    project_dependency_files(project_name, directory: directory)
   end
-
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -22,14 +21,11 @@ RSpec.describe Dependabot::Devcontainers::FileParser do
       directory: directory
     )
   end
-
-  let(:files) do
-    project_dependency_files(project_name, directory: directory)
+  let(:parser) do
+    described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path)
   end
 
-  let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
-
-  let(:dependencies) { parser.parse }
+  it_behaves_like "a dependency file parser"
 
   shared_examples_for "parse" do
     it "parses dependencies fine" do
@@ -219,6 +215,37 @@ RSpec.describe Dependabot::Devcontainers::FileParser do
 
     it "ignores them" do
       expect(dependencies).to be_empty
+    end
+  end
+
+  describe "#ecosystem" do
+    subject(:ecosystem) { parser.ecosystem }
+
+    let(:project_name) { "config_in_root" }
+    let(:directory) { "/" }
+
+    it "has the correct name" do
+      expect(ecosystem.name).to eq "devcontainers"
+    end
+
+    describe "#package_manager" do
+      subject(:package_manager) { ecosystem.package_manager }
+
+      it "returns the correct package manager" do
+        expect(package_manager.name).to eq "devcontainers"
+        expect(package_manager.requirement).to be_nil
+        expect(package_manager.version.to_s).to match(/\d+.\d+.\d+/)
+      end
+    end
+
+    describe "#language" do
+      subject(:language) { ecosystem.language }
+
+      it "returns the correct language" do
+        expect(language.name).to eq "node"
+        expect(language.requirement).to be_nil
+        expect(language.version.to_s).to match(/\d+.\d+.\d+/)
+      end
     end
   end
 end

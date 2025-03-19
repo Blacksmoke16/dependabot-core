@@ -9,8 +9,6 @@ require "dependabot/devcontainers/requirement"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Devcontainers::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
   subject(:updater) do
     described_class.new(
       dependency_files: files,
@@ -20,17 +18,55 @@ RSpec.describe Dependabot::Devcontainers::FileUpdater do
     )
   end
 
-  let(:repo_contents_path) { build_tmp_repo(project_name) }
-
-  let(:files) { project_dependency_files(project_name, directory: directory) }
-  let(:directory) { "/" }
-
   let(:credentials) do
     [{ "type" => "git_source", "host" => "github.com", "username" => "x-access-token", "password" => "token" }]
   end
+  let(:directory) { "/" }
+  let(:files) { project_dependency_files(project_name, directory: directory) }
+  let(:repo_contents_path) { build_tmp_repo(project_name) }
+
+  it_behaves_like "a dependency file updater"
+
+  describe "#updated_files_regex" do
+    subject(:updated_files_regex) { described_class.updated_files_regex }
+
+    it "is not empty" do
+      expect(updated_files_regex).not_to be_empty
+    end
+
+    context "when files match the regex patterns" do
+      it "returns true for files that should be updated" do
+        matching_files = [
+          "devcontainer.json",
+          ".devcontainer.json",
+          "devcontainer-lock.json",
+          ".devcontainer-lock.json"
+        ]
+
+        matching_files.each do |file_name|
+          expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+
+      it "returns false for files that should not be updated" do
+        non_matching_files = [
+          "README.md",
+          ".github/workflow/main.yml",
+          "some_random_file.rb",
+          "requirements.txt",
+          "package-lock.json",
+          "package.json"
+        ]
+
+        non_matching_files.each do |file_name|
+          expect(updated_files_regex).not_to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+    end
+  end
 
   describe "#updated_dependency_files" do
-    subject { updater.updated_dependency_files }
+    subject(:updated_dependency_files) { updater.updated_dependency_files }
 
     let(:dependencies) do
       [
@@ -59,9 +95,9 @@ RSpec.describe Dependabot::Devcontainers::FileUpdater do
       let(:project_name) { "config_in_root" }
 
       it "updates the version in .devcontainer.json" do
-        expect(subject.size).to eq(1)
+        expect(updated_dependency_files.size).to eq(1)
 
-        config = subject.first
+        config = updated_dependency_files.first
         expect(config.name).to eq(".devcontainer.json")
         expect(config.content).to include("ghcr.io/codspace/versioning/foo:2\"")
       end
@@ -71,12 +107,12 @@ RSpec.describe Dependabot::Devcontainers::FileUpdater do
       let(:project_name) { "manifest_and_lockfile" }
 
       it "updates the version in both files" do
-        expect(subject.size).to eq(2)
+        expect(updated_dependency_files.size).to eq(2)
 
-        config = subject.find { |f| f.name == ".devcontainer.json" }
+        config = updated_dependency_files.find { |f| f.name == ".devcontainer.json" }
         expect(config.content).to include("ghcr.io/codspace/versioning/foo:2\"")
 
-        lockfile = subject.find { |f| f.name == ".devcontainer-lock.json" }
+        lockfile = updated_dependency_files.find { |f| f.name == ".devcontainer-lock.json" }
         expect(lockfile.content).to include('"version": "2.11.1"')
       end
     end
@@ -108,9 +144,9 @@ RSpec.describe Dependabot::Devcontainers::FileUpdater do
       end
 
       it "updates the version in both manifests" do
-        expect(subject.size).to eq(1)
+        expect(updated_dependency_files.size).to eq(1)
 
-        config = subject.first
+        config = updated_dependency_files.first
         expect(config.name).to eq(".devcontainer/devcontainer.json")
         expect(config.content).to include("ghcr.io/codspace/versioning/baz:2.0\"")
       end
@@ -143,9 +179,9 @@ RSpec.describe Dependabot::Devcontainers::FileUpdater do
       end
 
       it "updates the version in lockfile" do
-        expect(subject.size).to eq(1)
+        expect(updated_dependency_files.size).to eq(1)
 
-        lockfile = subject.first
+        lockfile = updated_dependency_files.first
         expect(lockfile.name).to eq(".devcontainer-lock.json")
         expect(lockfile.content).to include('"version": "2.11.1"')
       end
@@ -179,9 +215,9 @@ RSpec.describe Dependabot::Devcontainers::FileUpdater do
       end
 
       it "updates the version in lockfile" do
-        expect(subject.size).to eq(1)
+        expect(updated_dependency_files.size).to eq(1)
 
-        config = subject.first
+        config = updated_dependency_files.first
         expect(config.name).to eq(".devcontainer/devcontainer-lock.json")
         expect(config.content).to include("ghcr.io/devcontainers/features/common-utils:2")
         expect(config.content).to include('"version": "2.4.0"')
@@ -215,9 +251,9 @@ RSpec.describe Dependabot::Devcontainers::FileUpdater do
       let(:project_name) { "updated_manifest_outdated_lockfile" }
 
       it "does not go past the target version in the lockfile" do
-        expect(subject.size).to eq(1)
+        expect(updated_dependency_files.size).to eq(1)
 
-        lockfile = subject.first
+        lockfile = updated_dependency_files.first
         expect(lockfile.name).to eq(".devcontainer-lock.json")
         expect(lockfile.content).to include('"version": "2.10.0"')
       end

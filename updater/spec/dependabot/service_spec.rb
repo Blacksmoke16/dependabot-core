@@ -10,8 +10,11 @@ require "dependabot/dependency_snapshot"
 require "dependabot/errors"
 require "dependabot/pull_request_creator"
 require "dependabot/service"
+require "dependabot/experiments"
 
 RSpec.describe Dependabot::Service do
+  subject(:service) { described_class.new(client: mock_client) }
+
   let(:base_sha) { "mock-sha" }
 
   let(:mock_client) do
@@ -20,15 +23,21 @@ RSpec.describe Dependabot::Service do
       update_pull_request: nil,
       close_pull_request: nil,
       record_update_job_error: nil,
-      record_update_job_unknown_error: nil
+      record_update_job_unknown_error: nil,
+      record_update_job_warning: nil
     })
     allow(api_client).to receive(:is_a?).with(Dependabot::ApiClient).and_return(true)
     api_client
   end
 
-  subject(:service) { described_class.new(client: mock_client) }
+  let(:enable_enhanced_error_details_for_updater) { false }
 
-  shared_context :a_pr_was_created do
+  before do
+    Dependabot::Experiments.register(:enable_enhanced_error_details_for_updater,
+                                     enable_enhanced_error_details_for_updater)
+  end
+
+  shared_context "with a created pr" do
     let(:source) do
       instance_double(Dependabot::Source, provider: "github", repo: "dependabot/dependabot-core", directory: "/")
     end
@@ -81,7 +90,7 @@ RSpec.describe Dependabot::Service do
 
     let(:dependency_files) do
       [
-        { name: "Gemfile", content: "some gems" }
+        Dependabot::DependencyFile.new(name: "Gemfile", content: "some gems")
       ]
     end
 
@@ -94,12 +103,10 @@ RSpec.describe Dependabot::Service do
             commit_message: "Commit message"
           )
         )
-
-      service.create_pull_request(dependency_change, base_sha)
     end
   end
 
-  shared_context :a_pr_was_updated do
+  shared_context "with an updated pr" do
     let(:source) do
       instance_double(Dependabot::Source, provider: "github", repo: "dependabot/dependabot-core", directory: "/")
     end
@@ -139,7 +146,7 @@ RSpec.describe Dependabot::Service do
 
     let(:dependency_files) do
       [
-        { name: "Gemfile", content: "some gems" }
+        Dependabot::DependencyFile.new(name: "Gemfile", content: "some gems")
       ]
     end
 
@@ -148,7 +155,7 @@ RSpec.describe Dependabot::Service do
     end
   end
 
-  shared_context :a_pr_was_closed do
+  shared_context "with an closd pr" do
     let(:dependency_name) { "dependabot-fortran" }
     let(:reason) { :dependency_removed }
 
@@ -157,7 +164,7 @@ RSpec.describe Dependabot::Service do
     end
   end
 
-  shared_context :an_error_was_reported do
+  shared_context "with a reported error" do
     before do
       service.record_update_job_error(
         error_type: :epoch_error,
@@ -168,7 +175,7 @@ RSpec.describe Dependabot::Service do
     end
   end
 
-  shared_context :a_dependency_error_was_reported do
+  shared_context "with a reported dependency error" do
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "dependabot-cobol",
@@ -219,21 +226,52 @@ RSpec.describe Dependabot::Service do
   end
 
   describe "#create_pull_request" do
-    include_context :a_pr_was_created
+    include_context "with a created pr"
+
+    before do
+      Dependabot::Experiments.register("dependency_change_validation", true)
+    end
 
     it "delegates to @client" do
+      service.create_pull_request(dependency_change, base_sha)
+
       expect(mock_client)
         .to have_received(:create_pull_request).with(dependency_change, base_sha)
     end
 
     it "memoizes a shorthand summary of the PR" do
+      service.create_pull_request(dependency_change, base_sha)
+
       expect(service.pull_requests)
         .to eql([["dependabot-fortran ( from 1.7.0 to 1.8.0 ), dependabot-pascal ( from 2.7.0 to 2.8.0 )", :created]])
+    end
+
+    context "when the change is missing a previous version and there's no change in requirements" do
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "dependabot-fortran",
+            package_manager: "bundler",
+            version: "1.8.0",
+            requirements: [
+              { file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }
+            ],
+            previous_requirements: [
+              { file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }
+            ]
+          )
+        ]
+      end
+
+      it "raises an InvalidUpdatedDependencies error" do
+        expect { service.create_pull_request(dependency_change, base_sha) }
+          .to raise_error(Dependabot::DependencyChange::InvalidUpdatedDependencies)
+      end
     end
   end
 
   describe "#update_pull_request" do
-    include_context :a_pr_was_updated
+    include_context "with an updated pr"
 
     it "delegates to @client" do
       expect(mock_client).to have_received(:update_pull_request).with(dependency_change, base_sha)
@@ -245,7 +283,7 @@ RSpec.describe Dependabot::Service do
   end
 
   describe "#close_pull_request" do
-    include_context :a_pr_was_closed
+    include_context "with an closd pr"
 
     it "delegates to @client" do
       expect(mock_client).to have_received(:close_pull_request).with(dependency_name, reason)
@@ -257,7 +295,7 @@ RSpec.describe Dependabot::Service do
   end
 
   describe "#record_update_job_error" do
-    include_context :an_error_was_reported
+    include_context "with a reported error"
 
     it "delegates to @client" do
       expect(mock_client).to have_received(:record_update_job_error).with(
@@ -272,6 +310,38 @@ RSpec.describe Dependabot::Service do
 
     it "memoizes a shorthand summary of the error" do
       expect(service.errors).to eql([["epoch_error", nil]])
+    end
+
+    context "when enable_enhanced_error_details_for_updater is enabled" do
+      let(:enable_enhanced_error_details_for_updater) { true }
+
+      it "memoizes a shorthand summary of the error" do
+        expect(service.errors).to eql([["epoch_error", {
+          message: "What is fortran doing here?!"
+        }, nil]])
+      end
+    end
+  end
+
+  describe "#record_update_job_warning" do
+    let(:warn_type) { :deprecated_dependency }
+    let(:warn_title) { "Deprecated Dependency Used" }
+    let(:warn_description) { "The dependency xyz is deprecated and should be updated or removed." }
+
+    before do
+      service.record_update_job_warning(
+        warn_type: warn_type,
+        warn_title: warn_title,
+        warn_description: warn_description
+      )
+    end
+
+    it "delegates to @client" do
+      expect(mock_client).to have_received(:record_update_job_warning).with(
+        warn_type: warn_type,
+        warn_title: warn_title,
+        warn_description: warn_description
+      )
     end
   end
 
@@ -337,6 +407,25 @@ RSpec.describe Dependabot::Service do
             Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
             Dependabot::ErrorAttributes::CLASS => "Dependabot::DependabotError",
             Dependabot::ErrorAttributes::DEPENDENCIES => "lodash"
+          )
+        )
+    end
+
+    it "extracts information from a security job if provided" do
+      job = OpenStruct.new(id: 1234, package_manager: "npm_and_yarn", repo_private?: false, repo_owner: "foo",
+                           security_updates_only?: true)
+      service.capture_exception(error: error, job: job)
+
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            Dependabot::ErrorAttributes::CLASS => "Dependabot::DependabotError",
+            Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
+            Dependabot::ErrorAttributes::JOB_ID => job.id,
+            Dependabot::ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
+            Dependabot::ErrorAttributes::SECURITY_UPDATE => true
           )
         )
     end
@@ -485,9 +574,11 @@ RSpec.describe Dependabot::Service do
     end
 
     context "when a pr was created" do
-      include_context :a_pr_was_created
+      include_context "with a created pr"
 
       it "includes the summary of the created PR" do
+        service.create_pull_request(dependency_change, base_sha)
+
         expect(service.summary)
           .to include("created",
                       "dependabot-fortran ( from 1.7.0 to 1.8.0 ), dependabot-pascal ( from 2.7.0 to 2.8.0 )")
@@ -495,7 +586,7 @@ RSpec.describe Dependabot::Service do
     end
 
     context "when a pr was updated" do
-      include_context :a_pr_was_updated
+      include_context "with an updated pr"
 
       it "includes the summary of the updated PR" do
         expect(service.summary)
@@ -504,7 +595,7 @@ RSpec.describe Dependabot::Service do
     end
 
     context "when a pr was closed" do
-      include_context :a_pr_was_closed
+      include_context "with an closd pr"
 
       it "includes the summary of the closed PR" do
         expect(service.summary)
@@ -513,7 +604,7 @@ RSpec.describe Dependabot::Service do
     end
 
     context "when there was an error" do
-      include_context :an_error_was_reported
+      include_context "with a reported error"
 
       it "includes an error count" do
         expect(service.summary)
@@ -524,10 +615,23 @@ RSpec.describe Dependabot::Service do
         expect(service.summary)
           .to include("epoch_error")
       end
+
+      context "when enable_enhanced_error_details_for_updater is enabled" do
+        let(:enable_enhanced_error_details_for_updater) { true }
+
+        it "includes an error summary" do
+          expect(service.summary)
+            .to include("epoch_error")
+          expect(service.summary)
+            .to include("Type")
+          expect(service.summary)
+            .to include("Details")
+        end
+      end
     end
 
     context "when there was an dependency error" do
-      include_context :a_dependency_error_was_reported
+      include_context "with a reported dependency error"
 
       it "includes an error count" do
         expect(service.summary)
@@ -540,11 +644,28 @@ RSpec.describe Dependabot::Service do
         expect(service.summary)
           .to include("dependabot-cobol")
       end
+
+      context "when enable_enhanced_error_details_for_updater is enabled" do
+        let(:enable_enhanced_error_details_for_updater) { true }
+
+        it "includes an error summary" do
+          expect(service.summary)
+            .to include("unknown_error")
+          expect(service.summary)
+            .to include("dependabot-cobol")
+          expect(service.summary)
+            .to include("Dependency")
+          expect(service.summary)
+            .to include("Error Type")
+          expect(service.summary)
+            .to include("Error Details")
+        end
+      end
     end
 
     context "when there was a mix of pr activity" do
-      include_context :a_pr_was_updated
-      include_context :a_pr_was_closed
+      include_context "with an updated pr"
+      include_context "with an closd pr"
 
       it "includes the summary of the updated PR" do
         expect(service.summary)
@@ -558,10 +679,14 @@ RSpec.describe Dependabot::Service do
     end
 
     context "when there was a mix of pr and error activity" do
-      include_context :a_pr_was_created
-      include_context :a_pr_was_closed
-      include_context :an_error_was_reported
-      include_context :a_dependency_error_was_reported
+      include_context "with a created pr"
+      include_context "with an closd pr"
+      include_context "with a reported error"
+      include_context "with a reported dependency error"
+
+      before do
+        service.create_pull_request(dependency_change, base_sha)
+      end
 
       it "includes the summary of the created PR" do
         expect(service.summary)

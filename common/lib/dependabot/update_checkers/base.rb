@@ -7,6 +7,7 @@ require "sorbet-runtime"
 require "dependabot/requirements_update_strategy"
 require "dependabot/security_advisory"
 require "dependabot/utils"
+require "dependabot/package/release_cooldown_options"
 
 module Dependabot
   module UpdateCheckers
@@ -41,6 +42,9 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyGroup)) }
       attr_reader :dependency_group
 
+      sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+      attr_reader :update_cooldown
+
       sig { returns(T::Hash[Symbol, T.untyped]) }
       attr_reader :options
 
@@ -55,6 +59,7 @@ module Dependabot
           security_advisories: T::Array[Dependabot::SecurityAdvisory],
           requirements_update_strategy: T.nilable(Dependabot::RequirementsUpdateStrategy),
           dependency_group: T.nilable(Dependabot::DependencyGroup),
+          update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
           options: T::Hash[Symbol, T.untyped]
         )
           .void
@@ -63,7 +68,7 @@ module Dependabot
                      repo_contents_path: nil, ignored_versions: [],
                      raise_on_ignored: false, security_advisories: [],
                      requirements_update_strategy: nil, dependency_group: nil,
-                     options: {})
+                     update_cooldown: nil, options: {})
         @dependency = dependency
         @dependency_files = dependency_files
         @repo_contents_path = repo_contents_path
@@ -73,6 +78,7 @@ module Dependabot
         @raise_on_ignored = raise_on_ignored
         @security_advisories = security_advisories
         @dependency_group = dependency_group
+        @update_cooldown = update_cooldown
         @options = options
       end
 
@@ -136,7 +142,7 @@ module Dependabot
 
       # Lowest available security fix version not checking resolvability
       # @return [Dependabot::<package manager>::Version, #to_s] version class
-      sig { overridable.returns(Dependabot::Version) }
+      sig { overridable.returns(T.nilable(Dependabot::Version)) }
       def lowest_security_fix_version
         raise NotImplementedError, "#{self.class} must implement #lowest_security_fix_version"
       end
@@ -363,7 +369,7 @@ module Dependabot
       end
 
       # TODO: Should this return Dependabot::Version?
-      sig { returns(T.nilable(Gem::Version)) }
+      sig { returns(T.nilable(Dependabot::Version)) }
       def current_version
         @current_version ||=
           T.let(

@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "dependabot/errors"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
+require "dependabot/github_actions/constants"
 
 module Dependabot
   module GithubActions
@@ -14,7 +15,13 @@ module Dependabot
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
-        [%r{\.github/workflows/.+\.ya?ml$}]
+        [
+          # Matches .yml or .yaml files in the .github/workflows directories
+          WORKFLOW_YAML_REGEX,
+
+          # Matches .yml or .yaml files in the root directory or any subdirectory
+          ALL_YAML_FILES
+        ]
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
@@ -78,7 +85,7 @@ module Dependabot
             old_declaration
             .gsub(/@.*+/, "@#{new_ref}")
 
-          # Replace the old declaration that's preceded by a non-word character
+          # Replace the old declaration that's preceded by a non-word character (unless it's a hyphen)
           # and followed by a whitespace character (comments) or EOL.
           # If the declaration is followed by a comment that lists the version associated
           # with the SHA source ref, then update the comment to the human-readable new version.
@@ -88,7 +95,7 @@ module Dependabot
           updated_content =
             updated_content
             .gsub(
-              /(?<=\W|"|')#{Regexp.escape(old_declaration)}["']?(?<comment>\s+#.*)?(?=\s|$)/
+              /(?<=[^a-zA-Z_-]|"|')#{Regexp.escape(old_declaration)}["']?(?<comment>\s+#.*)?(?=\s|$)/
             ) do |match|
               comment = Regexp.last_match(:comment)
               match.gsub!(old_declaration, new_declaration)
@@ -118,6 +125,8 @@ module Dependabot
         return unless comment.end_with? previous_version
 
         new_version_tag = git_checker.most_specific_version_tag_for_sha(new_ref)
+        return unless new_version_tag
+
         new_version = version_class.new(new_version_tag).to_s
         comment.gsub(previous_version, new_version)
       end
