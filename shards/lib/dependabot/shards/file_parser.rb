@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency"
-require "dependabot/composer/version"
+require "dependabot/shards/version"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
@@ -15,36 +15,25 @@ module Dependabot
 
       DEPENDENCY_TYPES = %w(dependencies development_dependencies).freeze
 
+      sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
-        dependency_set = DependencySet.new
-        dependency_set += manifest_dependencies
-        dependency_set += lockfile_dependencies
+        dependency_set = T.let(DependencySet.new, DependencySet)
+
+        manifest_dependencies dependency_set
+        lockfile_dependencies dependency_set
+
         dependency_set.dependencies
       end
 
       private
 
+      sig { override.void }
       def check_required_files
-        raise "No shard.yml!" unless get_original_file("shard.yml")
+        raise "No #{PackageManager::MANIFEST_FILENAME}!" unless get_original_file(PackageManager::MANIFEST_FILENAME)
       end
 
-      def build_manifest_dependency(name, attributes, type)
-        Dependency.new(
-          name: name,
-          version: dependency_version(name: name),
-          package_manager: "shards",
-          requirements: [{
-            requirement: attributes["version"],
-            file: "shard.yml",
-            source: dependency_source(name: name, attributes: attributes),
-            groups: [type]
-          }],
-        )
-      end
-
-      def manifest_dependencies
-        dependencies = DependencySet.new
-
+      sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
+      def manifest_dependencies(dependency_set)
         DEPENDENCY_TYPES.each do |type|
           next unless parsed_shard_yaml[type].is_a?(Hash)
 
@@ -56,13 +45,47 @@ module Dependabot
               next unless version&.match?(/^\d/)
             end
 
-            dependencies << build_manifest_dependency(name, attributes, type)
+            dependency_set << build_manifest_dependency(name, attributes, type)
           end
         end
-
-        dependencies
       end
 
+      sig { params(name: String, attributes: T::Hash[Symbol, String], type: String).returns(Dependabot::Dependency) }
+      def build_manifest_dependency(name, attributes, type)
+        Dependency.new(
+          name: name,
+          version: dependency_version(name: name),
+          package_manager: "shards",
+          requirements: [{
+            requirement: attributes["version"],
+            file: PackageManager::MANIFEST_FILENAME,
+            source: dependency_source(name: name, attributes: attributes),
+            groups: [type]
+          }],
+        )
+      end
+
+      sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
+      def lockfile_dependencies(dependency_set)
+        return unless lockfile
+
+        parsed_lockfile["shards"].each do |name, attributes|
+          dependency_set << build_lockfile_dependency(name, attributes["version"])
+        end
+      end
+
+      sig { params(name: String, version: String).returns(Dependabot::Dependency) }
+      def build_lockfile_dependency(name, version)
+        Dependency.new(
+          name: name,
+          version: version,
+          requirements: [],
+          package_manager: "shards",
+          subdependency_metadata: [] # TODO: Do we have a way to even know this?
+        )
+      end
+
+      sig { returns(T.nilable(T::Hash[String, T.untyped])) }
       def parsed_lockfile
         return unless lockfile
 
@@ -71,20 +94,30 @@ module Dependabot
         raise Dependabot::DependencyFileNotParseable, lockfile.path
       end
 
+      sig { returns(T::Hash[String, T.untyped]) }
       def parsed_shard_yaml
         @parsed_shard_yaml ||= YAML.safe_load(shard_yml.content)
       rescue Psych::SyntaxError
         raise Dependabot::DependencyFileNotParseable, shard_yml.path
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def shard_yml
-        @shard_yml ||= get_original_file("shard.yml")
+        @shard_yml ||= T.let(
+          get_original_file(PackageManager::MANIFEST_FILENAME),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def lockfile
-        @lockfile ||= get_original_file("shard.lock")
+        @lockfile ||= T.let(
+          get_original_file(PackageManager::LOCKFILE_FILENAME),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
+      sig { params(name: String).returns(T.nilable(String)) }
       def dependency_version(name:)
         return unless lockfile
 
@@ -94,6 +127,7 @@ module Dependabot
         shard.fetch("version")
       end
 
+      sig { params(name: String, attributes: T::Hash[String, T.untyped]).returns(T.nilable(T::Hash[Symbol, T.nilable(String)])) }
       def dependency_source(name:, attributes:)
         if attributes.has_key?("path")
           return { type: "path" }
@@ -121,32 +155,9 @@ module Dependabot
         }
       end
 
+      sig { params(name: String).returns(T.nilable(T::Hash[String, T.untyped])) }
       def lockfile_details(name:)
         parsed_lockfile.dig("shards", name)
-      end
-
-      # rubocop:disable Metrics/PerceivedComplexity
-      def lockfile_dependencies
-        dependencies = DependencySet.new
-
-        return dependencies unless lockfile
-
-        parsed_lockfile["shards"].each do |name, attributes|
-          dependencies << build_lockfile_dependency(name, attributes["version"])
-        end
-
-        dependencies
-      end
-
-      # rubocop:enable Metrics/PerceivedComplexity
-      def build_lockfile_dependency(name, version)
-        Dependency.new(
-          name: name,
-          version: version,
-          requirements: [],
-          package_manager: "shards",
-          subdependency_metadata: [] # TODO: Do we have a way to even know this?
-        )
       end
     end
   end

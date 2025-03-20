@@ -77,12 +77,8 @@ $LOAD_PATH << "./python/lib"
 $LOAD_PATH << "./pub/lib"
 $LOAD_PATH << "./swift/lib"
 $LOAD_PATH << "./terraform/lib"
-<<<<<<< HEAD
 $LOAD_PATH << "./shards/lib"
-||||||| 934798fc9
-=======
 $LOAD_PATH << "./uv/lib"
->>>>>>> origin/main
 
 updater_image_gemfile = File.expand_path("../dependabot-updater/Gemfile", __dir__)
 updater_repo_gemfile = File.expand_path("../updater/Gemfile", __dir__)
