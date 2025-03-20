@@ -26,11 +26,9 @@ module Dependabot
         end
 
         def latest_resolvable_version
-          return @latest_resolvable_version if defined?(@latest_resolvable_version)
-
-          @latest_resolvable_version = fetch_latest_resolvable_version
-          rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
-            raise Dependabot::DependencyFileNotResolvable, e.message
+          return @latest_resolvable_version ||= fetch_latest_resolvable_version
+        rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+          raise Dependabot::DependencyFileNotResolvable, e.message
         end
 
         private
@@ -41,7 +39,8 @@ module Dependabot
 
         def fetch_latest_resolvable_version
           base_directory = dependency_files.first.directory
-          SharedHelpers.in_a_temporary_directory(base_directory) do
+          SharedHelpers.in_a_temporary_directory(base_directory) do |path|
+            # pp path.to_s
             write_temporary_dependency_files
 
             SharedHelpers.with_git_configured(credentials: credentials) do

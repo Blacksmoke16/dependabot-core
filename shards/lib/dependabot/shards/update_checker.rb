@@ -12,6 +12,7 @@ require "dependabot/update_checkers/base"
 module Dependabot
   module Shards
     class UpdateChecker < Dependabot::UpdateCheckers::Base
+      require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_resolver"
 
       def latest_version
@@ -30,7 +31,7 @@ module Dependabot
         end
 
         # A commit, return as is
-        if git_commit_checker.ref_looks_like_commit_sha? dependency.version
+        if (v = dependency.version) && git_commit_checker.ref_looks_like_commit_sha?(v)
           return dependency.version
         end
 
@@ -54,15 +55,20 @@ module Dependabot
             credentials: credentials,
             dependency: dependency,
             dependency_files: dependency_files,
-            # requirements_to_unlock: :none
+            requirements_to_unlock: :none,
           ).latest_resolvable_version
       end
 
       def updated_requirements
         RequirementsUpdater.new(
           requirements: dependency.requirements,
+          latest_resolvable_version: latest_resolvable_version&.to_s,
           update_strategy: requirements_update_strategy
         ).updated_requirements
+      end
+
+      def requirements_unlocked_or_can_be?
+        !requirements_update_strategy.lockfile_only?
       end
 
       def requirements_update_strategy
@@ -70,7 +76,7 @@ module Dependabot
         return @requirements_update_strategy if @requirements_update_strategy
 
         # Otherwise, widen ranges for libraries and bump versions for apps
-        library? ? RequirementsUpdateStrategy::BumpVersionsIfNecessary : RequirementsUpdateStrategy::BumpVersions
+        library? ? RequirementsUpdateStrategy::WidenRanges : RequirementsUpdateStrategy::BumpVersionsIfNecessary
       end
 
       private
