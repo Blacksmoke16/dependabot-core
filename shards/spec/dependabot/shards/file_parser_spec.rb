@@ -78,7 +78,7 @@ RSpec.describe Dependabot::Shards::FileParser do
       let(:project_name) { "commit_source" }
 
       describe "the first dependency" do
-        subject { dependencies.first }
+        subject { dependencies[0] }
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("db") }
@@ -105,7 +105,7 @@ RSpec.describe Dependabot::Shards::FileParser do
       let(:project_name) { "branch_source" }
 
       describe "the first dependency" do
-        subject { dependencies.first }
+        subject { dependencies[0] }
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("db") }
@@ -132,7 +132,7 @@ RSpec.describe Dependabot::Shards::FileParser do
       let(:project_name) { "tag_source" }
 
       describe "the first dependency" do
-        subject { dependencies.first }
+        subject { dependencies[0] }
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("db") }
