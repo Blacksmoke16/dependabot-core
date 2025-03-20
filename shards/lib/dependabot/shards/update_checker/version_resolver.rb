@@ -99,8 +99,7 @@ module Dependabot
           stdout, process = Open3.capture2e({}, command)
           time_taken = Time.now - start
 
-          # Raise an error with the output from the shell session if Cargo
-          # returns a non-zero status
+          # Raise an error with the output from the shell session if Shards returns a non-zero status
           return if process.success?
 
           raise SharedHelpers::HelperSubprocessFailed.new(
