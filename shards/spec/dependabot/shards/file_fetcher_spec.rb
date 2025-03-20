@@ -6,8 +6,6 @@ require "dependabot/shards/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Shards::FileFetcher do
-  it_behaves_like "a dependency file fetcher"
-
   let(:directory) { "/" }
   let(:source) do
     Dependabot::Source.new(
@@ -54,6 +52,8 @@ RSpec.describe Dependabot::Shards::FileFetcher do
         headers: { "content-type" => "application/json" }
       )
   end
+
+  it_behaves_like "a dependency file fetcher"
 
   it "fetches shard.yml and shard.lock" do
     expect(file_fetcher_instance.files.map(&:name))

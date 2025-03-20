@@ -111,13 +111,7 @@ COPY --chown=dependabot:dependabot terraform/.bundle terraform/dependabot-terraf
 COPY --chown=dependabot:dependabot uv/.bundle uv/dependabot-uv.gemspec uv/
 
 # prevent having all the source in every ecosystem image
-<<<<<<< HEAD
-RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler shards silent swift devcontainers; do \
-||||||| 934798fc9
-RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler silent swift devcontainers; do \
-=======
-RUN for ecosystem in git_submodules terraform github_actions hex elm docker docker_compose nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler silent swift devcontainers dotnet_sdk bun uv helm; do \
->>>>>>> origin/main
+RUN for ecosystem in git_submodules terraform github_actions hex elm docker docker_compose nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler shards silent swift devcontainers dotnet_sdk bun uv helm; do \
     mkdir -p $ecosystem/lib/dependabot; \
     touch $ecosystem/lib/dependabot/$ecosystem.rb; \
   done

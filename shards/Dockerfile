@@ -1,6 +1,6 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 
-ARG CRYSTAL_VERSION=1.12
+ARG CRYSTAL_VERSION=1.15
 
 # TODO: Maybe just install shards itself
 RUN curl -fsSL https://crystal-lang.org/install.sh | bash -s -- --version=$CRYSTAL_VERSION
