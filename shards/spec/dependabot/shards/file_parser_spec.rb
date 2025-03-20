@@ -331,4 +331,22 @@ RSpec.describe Dependabot::Shards::FileParser do
       end
     end
   end
+
+  describe "#ecosystem" do
+    subject(:ecosystem) { parser.ecosystem }
+
+    it "has the correct name" do
+      expect(ecosystem.name).to eq "crystal"
+    end
+
+    describe "#package_manager" do
+      subject(:package_manager) { ecosystem.package_manager }
+
+      it "returns the correct package manager" do
+        expect(package_manager.name).to eq "shards"
+        expect(package_manager.requirement).to be_nil
+        expect(package_manager.version.to_s).to eq "0.19.1"
+      end
+    end
+  end
 end

@@ -23,15 +23,15 @@ module Dependabot
         super(
           name: NAME,
           version: Version.new(raw_version),
-        )
+       )
       end
 
-      sig { returns(T::Boolean) }
+      sig { override.returns(T::Boolean) }
       def deprecated?
         false
       end
 
-      sig { returns(T::Boolean) }
+      sig { override.returns(T::Boolean) }
       def unsupported?
         false
       end
