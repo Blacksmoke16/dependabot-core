@@ -40,6 +40,7 @@ jobs:
           - { path: terraform, name: terraform, ecosystem: terraform }
           - { path: bun, name: bun, ecosystem: bun }
           - { path: uv, name: uv, ecosystem: uv }
+          - { path: shards, name: shards, ecosystem: shards }
 
     steps:
       - name: Checkout code

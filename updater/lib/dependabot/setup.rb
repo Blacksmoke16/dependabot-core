@@ -48,6 +48,7 @@ Sentry.init do |config|
     silent|
     swift|
     uv|
+    shards|
     devcontainers
   )}x
 
@@ -84,3 +85,4 @@ require "dependabot/swift"
 require "dependabot/devcontainers"
 require "dependabot/bun"
 require "dependabot/uv"
+require "dependabot/shards"

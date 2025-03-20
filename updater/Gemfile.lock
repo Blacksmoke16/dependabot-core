@@ -172,6 +172,12 @@ PATH
     dependabot-uv (0.301.1)
       dependabot-common (= 0.301.1)
 
+PATH
+  remote: ../shards
+  specs:
+    dependabot-shards (0.301.1)
+      dependabot-common (= 0.301.1)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -464,6 +470,7 @@ DEPENDENCIES
   dependabot-swift!
   dependabot-terraform!
   dependabot-uv!
+  dependabot-shards!
   flamegraph (~> 0.9.5)
   gpgme (~> 2.0)
   http (~> 5.1)
