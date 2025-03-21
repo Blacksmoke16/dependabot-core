@@ -8,11 +8,12 @@ require "dependabot/utils"
 
 module Dependabot
   module Shards
-    # The Requirement type is responsible for "translating" Shards version constraints into a format that can be represented by Gem.
+    # The Requirement type is responsible for "translating" Shards version constraints
+    #  into a format that can be represented by Gem.
     class Requirement < Dependabot::Requirement
       extend T::Sig
 
-      AND_SEPARATOR = ','.freeze
+      AND_SEPARATOR = ","
 
       # For consistency with other languages, we define a requirements array.
       # Shards doesn't have an `OR` separator for requirements, so it always contains a single element.

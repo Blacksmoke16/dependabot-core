@@ -37,13 +37,13 @@ RSpec.describe Dependabot::Shards::FileParser do
           is_expected.to eq(
             [{
               requirement: nil,
-              file:        "shard.yml",
-              groups:      ["dependencies"],
-              source:      {
+              file: "shard.yml",
+              groups: ["dependencies"],
+              source: {
                 branch: nil,
                 ref: nil,
                 type: "git",
-                url:  "https://github.com/datanoise/openssl.cr.git",
+                url: "https://github.com/datanoise/openssl.cr.git",
               },
             }]
           )
@@ -60,13 +60,13 @@ RSpec.describe Dependabot::Shards::FileParser do
           is_expected.to eq(
             [{
               requirement: "~> 0.13.0",
-              file:        "shard.yml",
-              groups:      ["dependencies"],
-              source:      {
+              file: "shard.yml",
+              groups: ["dependencies"],
+              source: {
                 branch: nil,
                 ref: nil,
                 type: "git",
-                url:  "https://github.com/crystal-lang/crystal-db.git",
+                url: "https://github.com/crystal-lang/crystal-db.git",
               },
             }]
           )
@@ -87,13 +87,13 @@ RSpec.describe Dependabot::Shards::FileParser do
           is_expected.to eq(
             [{
               requirement: nil,
-              file:        "shard.yml",
-              groups:      ["dependencies"],
-              source:      {
+              file: "shard.yml",
+              groups: ["dependencies"],
+              source: {
                 branch: nil,
                 ref: "1d0105ffeb1f983fafdda7ec2fd68916f74b4a4c",
                 type: "git",
-                url:  "https://github.com/crystal-lang/crystal-db.git",
+                url: "https://github.com/crystal-lang/crystal-db.git",
               },
             }]
           )
@@ -114,13 +114,13 @@ RSpec.describe Dependabot::Shards::FileParser do
           is_expected.to eq(
             [{
               requirement: nil,
-              file:        "shard.yml",
-              groups:      ["dependencies"],
-              source:      {
+              file: "shard.yml",
+              groups: ["dependencies"],
+              source: {
                 branch: "master",
                 ref: nil,
                 type: "git",
-                url:  "https://github.com/crystal-lang/crystal-db.git",
+                url: "https://github.com/crystal-lang/crystal-db.git",
               },
             }]
           )
@@ -141,13 +141,13 @@ RSpec.describe Dependabot::Shards::FileParser do
           is_expected.to eq(
             [{
               requirement: nil,
-              file:        "shard.yml",
-              groups:      ["dependencies"],
-              source:      {
+              file: "shard.yml",
+              groups: ["dependencies"],
+              source: {
                 branch: nil,
                 ref: "v0.13.0",
                 type: "git",
-                url:  "https://github.com/crystal-lang/crystal-db.git",
+                url: "https://github.com/crystal-lang/crystal-db.git",
               },
             }]
           )
@@ -166,13 +166,13 @@ RSpec.describe Dependabot::Shards::FileParser do
         is_expected.to eq(
           [{
             requirement: "~> 0.12.0",
-            file:        "shard.yml",
-            groups:      ["dependencies"],
-            source:      {
+            file: "shard.yml",
+            groups: ["dependencies"],
+            source: {
               branch: nil,
               ref: nil,
               type: "git",
-              url:  "https://gitlab.com/arctic-fox/spectator.git",
+              url: "https://gitlab.com/arctic-fox/spectator.git",
             },
           }]
         )
@@ -190,13 +190,13 @@ RSpec.describe Dependabot::Shards::FileParser do
         is_expected.to eq(
           [{
             requirement: nil,
-            file:        "shard.yml",
-            groups:      ["dependencies"],
-            source:      {
+            file: "shard.yml",
+            groups: ["dependencies"],
+            source: {
               branch: nil,
               ref: nil,
               type: "git",
-              url:  "https://bitbucket.com/org/test.git",
+              url: "https://bitbucket.com/org/test.git",
             },
           }]
         )
@@ -214,13 +214,13 @@ RSpec.describe Dependabot::Shards::FileParser do
         is_expected.to eq(
           [{
             requirement: nil,
-            file:        "shard.yml",
-            groups:      ["dependencies"],
-            source:      {
+            file: "shard.yml",
+            groups: ["dependencies"],
+            source: {
               branch: nil,
               ref: nil,
               type: "git",
-              url:  "https://codeberg.org/skinnyjames/geoffrey.git",
+              url: "https://codeberg.org/skinnyjames/geoffrey.git",
             },
           }]
         )
@@ -240,9 +240,9 @@ RSpec.describe Dependabot::Shards::FileParser do
           is_expected.to eq(
             [{
               requirement: nil,
-              file:        "shard.yml",
-              groups:      ["dependencies"],
-              source:      {type: "path"},
+              file: "shard.yml",
+              groups: ["dependencies"],
+              source: { type: "path" },
             }]
           )
         end
@@ -285,13 +285,13 @@ RSpec.describe Dependabot::Shards::FileParser do
         is_expected.to eq(
           [{
             requirement: "~> 0.13.0",
-            file:        "shard.yml",
-            groups:      ["development_dependencies"],
-            source:      {
+            file: "shard.yml",
+            groups: ["development_dependencies"],
+            source: {
               branch: nil,
               ref: nil,
               type: "git",
-              url:  "https://github.com/crystal-lang/crystal-db.git",
+              url: "https://github.com/crystal-lang/crystal-db.git",
             },
           }]
         )

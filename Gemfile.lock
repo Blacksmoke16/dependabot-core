@@ -151,8 +151,8 @@ PATH
 PATH
   remote: shards
   specs:
-    dependabot-shards (0.257.0)
-      dependabot-common (= 0.257.0)
+    dependabot-shards (0.301.1)
+      dependabot-common (= 0.301.1)
 
 PATH
   remote: silent

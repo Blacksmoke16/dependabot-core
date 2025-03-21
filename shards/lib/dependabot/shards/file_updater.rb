@@ -74,7 +74,7 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def shard_yml
         @shard_yml ||= T.let(get_original_file(PackageManager::MANIFEST_FILENAME),
-                                 T.nilable(Dependabot::DependencyFile))
+                             T.nilable(Dependabot::DependencyFile))
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }

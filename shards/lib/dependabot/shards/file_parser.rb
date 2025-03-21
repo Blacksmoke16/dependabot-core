@@ -54,7 +54,8 @@ module Dependabot
             if lockfile
               version = dependency_version(name: name)
 
-              # Ignore dependency versions which don't appear in the lock file or are non-numeric since they can't be compared later in the process.
+              # Ignore dependency versions which don't appear in the lock file or are non-numeric
+              # since they can't be compared later in the process.
               next unless version&.match?(/^\d/)
             end
 
@@ -74,7 +75,7 @@ module Dependabot
             file: PackageManager::MANIFEST_FILENAME,
             source: dependency_source(name: name, attributes: attributes),
             groups: [type]
-          }],
+          }]
         )
       end
 
@@ -100,9 +101,9 @@ module Dependabot
 
       sig { returns(T::Hash[String, T.untyped]) }
       def parsed_shard_yaml
-        @parsed_shard_yaml ||= YAML.safe_load(shard_yml.content)
+        @parsed_shard_yaml ||= YAML.safe_load(shard_yml&.content || "")
       rescue Psych::SyntaxError
-        raise Dependabot::DependencyFileNotParseable, shard_yml.path
+        raise Dependabot::DependencyFileNotParseable, shard_yml&.path || "unknown"
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
@@ -117,9 +118,9 @@ module Dependabot
       def parsed_lockfile
         return unless lockfile
 
-        @parsed_lockfile ||= YAML.safe_load(lockfile.content)
+        @parsed_lockfile ||= YAML.safe_load(lockfile&.content || "")
       rescue Psych::SyntaxError
-        raise Dependabot::DependencyFileNotParseable, lockfile.path
+        raise Dependabot::DependencyFileNotParseable, lockfile&.path || "unknown"
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
@@ -140,22 +141,24 @@ module Dependabot
         shard.fetch("version")
       end
 
-      sig { params(name: String, attributes: T::Hash[String, T.untyped]).returns(T.nilable(T::Hash[Symbol, T.nilable(String)])) }
+      sig {
+        params(name: String,
+               attributes: T::Hash[String,
+                                   T.untyped]).returns(T.nilable(T::Hash[Symbol, T.nilable(String)]))
+      }
       def dependency_source(name:, attributes:)
-        if attributes.has_key?("path")
-          return { type: "path" }
-        end
+        return { type: "path" } if attributes.key?("path")
 
         # https://github.com/crystal-lang/shards/blob/950f383050a138a9d0e74ec48af91caceff13bfe/src/resolvers/git.cr#L121-L122
-        url = if source = attributes["github"]
-          "https://github.com/#{source}.git"
-        elsif source = attributes["gitlab"]
-          "https://gitlab.com/#{source}.git"
-        elsif source = attributes["bitbucket"]
-          "https://bitbucket.com/#{source}.git"
-        elsif url = attributes["git"]
-          url
-        end
+        url = if (source = attributes["github"])
+                "https://github.com/#{source}.git"
+              elsif (source = attributes["gitlab"])
+                "https://gitlab.com/#{source}.git"
+              elsif (source = attributes["bitbucket"])
+                "https://bitbucket.com/#{source}.git"
+              elsif (url = attributes["git"])
+                url
+              end
 
         # TODO: Support Mercurial and Fossil?
         return unless url
@@ -170,7 +173,7 @@ module Dependabot
 
       sig { params(name: String).returns(T.nilable(T::Hash[String, T.untyped])) }
       def lockfile_details(name:)
-        parsed_lockfile.dig("shards", name)
+        parsed_lockfile&.dig("shards", name)
       end
 
       sig { returns(Ecosystem::VersionManager) }

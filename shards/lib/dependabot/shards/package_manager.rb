@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+
 require "dependabot/ecosystem"
 require "dependabot/shards/version"
 

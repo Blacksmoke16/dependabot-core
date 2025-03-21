@@ -44,8 +44,7 @@ RSpec.describe Dependabot::Shards::UpdateChecker do
       url: "https://github.com/crystal-lang/crystal-db.git",
       branch: nil,
       ref: nil
-    }
-  }]
+    } }]
   end
   let(:credentials) { github_credentials }
   let(:files) { project_dependency_files(project_name) }

@@ -13,7 +13,6 @@ module Dependabot
   module Shards
     class FileUpdater
       class LockfileUpdater
-
         def initialize(dependencies:, dependency_files:, credentials:)
           @dependencies = dependencies
           @dependency_files = dependency_files
@@ -48,7 +47,8 @@ module Dependabot
           dependencies.first
         end
 
-        # Shell out to Shards, which handles everything for us, and does so without actually installing anything (so it's fast).
+        # Shell out to Shards, which handles everything for us,
+        # and does so without actually installing anything (so it's fast).
         def run_shards_lock_command
           run_shards_command(
             "shards lock --update"
@@ -79,8 +79,8 @@ module Dependabot
         def fetch_version_from_new_lockfile
           lockfile_content = File.read("shard.lock")
           versions = YAML.safe_load(lockfile_content).fetch("shards")
-                           .select { |(k, attributes)| k == dependency.name }
-                           .map { |(_, attributes)| attributes }
+                         .select { |(k, attributes)| k == dependency.name }
+                         .map { |(_, attributes)| attributes }
 
           updated_version =
             if dependency.top_level?
@@ -100,13 +100,6 @@ module Dependabot
 
           version
         end
-
-
-
-
-
-
-
 
         def library?
           parsed_composer_json["type"] == "library"

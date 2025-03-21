@@ -81,8 +81,8 @@ RSpec.describe Dependabot::Shards::FileFetcher do
     end
 
     it "fetches only shard.yml" do
-    expect(file_fetcher_instance.files.map(&:name))
-      .to match_array(%w(shard.yml))
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(%w(shard.yml))
     end
 
     it "provides the default shards.lock version" do

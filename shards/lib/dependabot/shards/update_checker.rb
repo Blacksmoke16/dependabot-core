@@ -1,8 +1,6 @@
 # typed: true
 # frozen_string_literal: true
 
-require "json"
-
 require "dependabot/errors"
 require "dependabot/requirements_update_strategy"
 require "dependabot/shared_helpers"
@@ -12,18 +10,20 @@ require "dependabot/update_checkers/base"
 module Dependabot
   module Shards
     class UpdateChecker < Dependabot::UpdateCheckers::Base
+      extend T::Sig
+      extend T::Helpers
+
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_resolver"
 
+      sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
         return nil if path_dependency?
 
         # If the dependency is pinned via:
 
         # A branch, the latest version is the latest commit on that branch
-        unless dependency_source_details[:branch].nil?
-          return git_commit_checker.head_commit_for_current_branch
-        end
+        return git_commit_checker.head_commit_for_current_branch unless dependency_source_details[:branch].nil?
 
         # A tag, fetch the version of the latest tag
         if git_commit_checker.pinned_ref_looks_like_version?
@@ -39,14 +39,16 @@ module Dependabot
         git_commit_checker.local_tag_for_latest_version.fetch(:version)
       end
 
+      sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_resolvable_version
         VersionResolver.new(
           credentials: credentials,
           dependency: dependency,
-          dependency_files: dependency_files,
+          dependency_files: dependency_files
         ).latest_resolvable_version
       end
 
+      sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_resolvable_version_with_no_unlock
         return nil if path_dependency?
 
@@ -54,11 +56,11 @@ module Dependabot
           VersionResolver.new(
             credentials: credentials,
             dependency: dependency,
-            dependency_files: dependency_files,
-            requirements_to_unlock: :none,
+            dependency_files: dependency_files
           ).latest_resolvable_version
       end
 
+      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_requirements
         RequirementsUpdater.new(
           requirements: dependency.requirements,
@@ -67,10 +69,12 @@ module Dependabot
         ).updated_requirements
       end
 
+      sig { override.returns(T::Boolean) }
       def requirements_unlocked_or_can_be?
         !requirements_update_strategy.lockfile_only?
       end
 
+      sig { returns(RequirementsUpdateStrategy) }
       def requirements_update_strategy
         # If passed in as an option (in the base class) honour that option
         return @requirements_update_strategy if @requirements_update_strategy
@@ -81,19 +85,23 @@ module Dependabot
 
       private
 
+      sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
         # Full unlock checks aren't implemented for Shards (yet)
         false
       end
 
+      sig { override.returns(T.noreturn) }
       def updated_dependencies_after_full_unlock
         raise NotImplementedError
       end
 
+      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.untyped])) }
       def dependency_source_details
         dependency.source_details
       end
 
+      sig { returns(Dependabot::GitCommitChecker) }
       def git_commit_checker
         @git_commit_checker ||= Dependabot::GitCommitChecker.new(
           dependency: dependency,
@@ -103,11 +111,13 @@ module Dependabot
         )
       end
 
+      sig { returns(T::Boolean) }
       def library?
         # If it has a lockfile, treat it as an application. Otherwise treat it as a library.
-        dependency_files.none? { |f| f.name == "shard.lock" }
+        dependency_files.none? { |f| f.name == PackageManager::LOCKFILE_FILENAME }
       end
 
+      sig { returns(T::Boolean) }
       def path_dependency?
         dependency.requirements.any? { |r| r.dig(:source, :type) == "path" }
       end

@@ -26,7 +26,7 @@ module Dependabot
         end
 
         def latest_resolvable_version
-          return @latest_resolvable_version ||= fetch_latest_resolvable_version
+          @latest_resolvable_version ||= fetch_latest_resolvable_version
         rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
           raise Dependabot::DependencyFileNotResolvable, e.message
         end
@@ -49,21 +49,21 @@ module Dependabot
 
             updated_version = fetch_version_from_new_lockfile
 
-            return if updated_version.nil?
+            return nil if updated_version.nil?
             return updated_version if git_dependency?
 
             version_class.new(updated_version)
           end
-        # rescue SharedHelpers::HelperSubprocessFailed => e
-        #   retry if better_specification_needed?(e)
-        #   handle_cargo_errors(e)
+          # rescue SharedHelpers::HelperSubprocessFailed => e
+          #   retry if better_specification_needed?(e)
+          #   handle_cargo_errors(e)
         end
 
         def fetch_version_from_new_lockfile
           lockfile_content = File.read("shard.lock")
           versions = YAML.safe_load(lockfile_content).fetch("shards")
-                           .select { |(k, attributes)| k == dependency.name }
-                           .map { |(_, attributes)| attributes }
+                         .select { |(k, attributes)| k == dependency.name }
+                         .map { |(_, attributes)| attributes }
 
           updated_version =
             if dependency.top_level?
@@ -84,7 +84,8 @@ module Dependabot
           version
         end
 
-        # Shell out to Shards, which handles everything for us, and does so without actually installing anything (so it's fast).
+        # Shell out to Shards, which handles everything for us,
+        # and does so without actually installing anything (so it's fast).
         def run_shards_lock_command
           run_shards_command(
             "shards lock --update"
