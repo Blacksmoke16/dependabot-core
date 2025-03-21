@@ -11,13 +11,6 @@ module Dependabot
   module Shards
     class UpdateChecker
       class VersionResolver
-        UNABLE_TO_UPDATE = /Unable to update (?<url>.*?)$/
-        BRANCH_NOT_FOUND_REGEX = /#{UNABLE_TO_UPDATE}.*to find branch `(?<branch>[^`]+)`/m
-        REVSPEC_PATTERN = /revspec '.*' not found/
-        OBJECT_PATTERN = /object not found - no match for id \(.*\)/
-        REF_NOT_FOUND_REGEX = /#{UNABLE_TO_UPDATE}.*(#{REVSPEC_PATTERN}|#{OBJECT_PATTERN})/m
-        GIT_REF_NOT_FOUND_REGEX = /Updating git repository `(?<url>[^`]*)`.*fatal: couldn't find remote ref/m
-
         def initialize(dependency:, credentials:,
                        dependency_files:)
           @dependency = dependency
@@ -39,8 +32,7 @@ module Dependabot
 
         def fetch_latest_resolvable_version
           base_directory = dependency_files.first.directory
-          SharedHelpers.in_a_temporary_directory(base_directory) do |path|
-            # pp path.to_s
+          SharedHelpers.in_a_temporary_directory(base_directory) do
             write_temporary_dependency_files
 
             SharedHelpers.with_git_configured(credentials: credentials) do
@@ -62,7 +54,7 @@ module Dependabot
         def fetch_version_from_new_lockfile
           lockfile_content = File.read("shard.lock")
           versions = YAML.safe_load(lockfile_content).fetch("shards")
-                         .select { |(k, attributes)| k == dependency.name }
+                         .select { |(k)| k == dependency.name }
                          .map { |(_, attributes)| attributes }
 
           updated_version =
@@ -77,7 +69,7 @@ module Dependabot
           version = updated_version.fetch("version")
 
           # Use the commit hash as it's the most accurate in this context
-          if match = version.match(/(.*)\+git\.commit\.([\w\d]+)/)
+          if (match = version.match(/(.*)\+git\.commit\.([\w\d]+)/))
             return match[1]
           end
 
@@ -152,7 +144,7 @@ module Dependabot
             "name" => "dependabot",
             "version" => "0.1.0",
             "dependencies" => object["dependencies"] || {},
-            "development_dependencies" => object["development_dependencies"] || {},
+            "development_dependencies" => object["development_dependencies"] || {}
           })
         end
 
