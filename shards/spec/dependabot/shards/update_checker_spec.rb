@@ -3,6 +3,7 @@
 
 require "spec_helper"
 
+require "dependabot/swift/file_parser"
 require "dependabot/shards/update_checker"
 require "dependabot/dependency_file"
 require "dependabot/dependency"
@@ -10,47 +11,38 @@ require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Shards::UpdateChecker do
-  let(:checker) do
-    described_class.new(
-      dependency: dependency,
-      dependency_files: files,
-      credentials: credentials,
-      ignored_versions: ignored_versions,
-      raise_on_ignored: raise_on_ignored,
-      security_advisories: security_advisories,
-      requirements_update_strategy: requirements_update_strategy
+  let(:dependency) { dependencies.find { |dep| dep.name == name } }
+  let(:file_parser) do
+    Dependabot::Shards::FileParser.new(
+      dependency_files: dependency_files,
+      repo_contents_path: repo_contents_path,
+      source: nil
     )
   end
-
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: dependency_version,
-      requirements: requirements,
-      package_manager: "shards"
-    )
+  let(:dependencies) do
+    file_parser.parse
   end
-  let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
+  let(:ignored_versions) { [] }
   let(:security_advisories) { [] }
-  let(:requirements_update_strategy) { nil }
-  let(:dependency_name) { "db" }
-  let(:dependency_version) { "0.10.0" }
-  let(:requirements) do
-    [{ file: "shard.yml", requirement: "0.10.0", groups: [], source: {
-      type: "git",
-      url: "https://github.com/crystal-lang/crystal-db.git",
-      branch: nil,
-      ref: "v0.10.0"
-    } }]
-  end
-  let(:credentials) { github_credentials }
-  let(:files) { project_dependency_files(project_name) }
-  let(:project_name) { "exact_version" }
+  let(:dependency_files) { project_dependency_files(project_name, directory: directory) }
+  let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+  let(:directory) { "/" }
   let(:upload_pack_fixture) { "db" }
   let(:service_pack_url) do
     "https://github.com/crystal-lang/crystal-db.git/info/refs" \
       "?service=git-upload-pack"
+  end
+  let(:checker) do
+    described_class.new(
+      dependency: dependency,
+      dependency_files: dependency_files,
+      repo_contents_path: repo_contents_path,
+      credentials: github_credentials,
+      security_advisories: security_advisories,
+      ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored
+    )
   end
 
   before do
@@ -66,24 +58,104 @@ RSpec.describe Dependabot::Shards::UpdateChecker do
 
   it_behaves_like "an update checker"
 
+  context "with an up to date dependency" do
+    let(:project_name) { "up_to_date" }
+    let(:name) { "db" }
+
+    describe "#can_update?" do
+      subject { checker.can_update?(requirements_to_unlock: :own) }
+
+      it { is_expected.to be_falsey }
+    end
+
+    describe "#latest_version" do
+      subject { checker.latest_version }
+
+      it { is_expected.to eq(dependency.version) }
+    end
+
+    describe "#latest_resolvable_version" do
+      subject { checker.latest_resolvable_version }
+
+      it { is_expected.to eq(dependency.version) }
+    end
+  end
+
+  context "with a dependency that needs only lockfile changes to get updated" do
+    let(:project_name) { "only_lockfile_change" }
+    let(:name) { "db" }
+
+    describe "#can_update?" do
+      subject { checker.can_update?(requirements_to_unlock: :own) }
+
+      it { is_expected.to be_truthy }
+    end
+
+    describe "#latest_version" do
+      subject { checker.latest_version }
+
+      it { is_expected.to eq("0.13.1") }
+    end
+
+    describe "#latest_resolvable_version" do
+      subject { checker.latest_resolvable_version }
+
+      it { is_expected.to eq("0.13.1") }
+    end
+
+    describe "#updated_requirements" do
+      subject(:updated_requirements) { checker.updated_requirements }
+
+      it "does not update them" do
+        expect(updated_requirements.first[:requirement]).to eq("~> 0.13.0")
+      end
+    end
+  end
+
+  shared_examples_for "a dependency that needs manifest changes to get updated" do
+    let(:project_name) { "exact_version" }
+    let(:name) { "db" }
+
+    describe "#can_update?" do
+      subject { checker.can_update?(requirements_to_unlock: :own) }
+
+      it { is_expected.to be_truthy }
+    end
+
+    describe "#latest_version" do
+      subject { checker.latest_version }
+
+      it { is_expected.to eq("0.13.1") }
+    end
+
+    describe "#latest_resolvable_version" do
+      subject { checker.latest_resolvable_version }
+
+      it { is_expected.to eq("0.13.1") }
+    end
+
+    describe "#updated_requirements" do
+      subject(:updated_requirements) { checker.updated_requirements }
+
+      it "updates them to match new version" do
+        expect(updated_requirements.first[:requirement]).to eq("~> 0.13.0")
+      end
+    end
+  end
+
+  # it_behaves_like "a dependency that needs manifest changes to get updated"
+
   describe "#latest_version" do
     subject(:latest_version) { checker.latest_version }
 
-    context "with a path source" do
-      context "when it is the dependency we're checking" do
-        let(:dependency_name) { "db" }
-        let(:dependency_version) { "0.10.0" }
-        let(:requirements) do
-          [{
-            requirement: "0.10.0",
-            file: "shard.yml",
-            groups: ["dependencies"],
-            source: { type: "path" }
-          }]
-        end
+    let(:project_name) { "exact_version" }
+    let(:name) { "db" }
 
-        it { is_expected.to be_nil }
-      end
+    context "with a path source" do
+      let(:project_name) { "path_source" }
+      let(:name) { "test" }
+
+      it { is_expected.to be_nil }
     end
 
     context "with a git source" do
@@ -200,6 +272,9 @@ RSpec.describe Dependabot::Shards::UpdateChecker do
   describe "#lowest_security_fix_version" do
     subject(:lowest_security_fix_version) { checker.lowest_security_fix_version }
 
+    let(:project_name) { "exact_version" }
+    let(:name) { "db" }
+
     it "finds the lowest available non-vulnerable version" do
       expect(lowest_security_fix_version).to eq(Gem::Version.new("0.10.1"))
     end
@@ -208,7 +283,7 @@ RSpec.describe Dependabot::Shards::UpdateChecker do
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
-            dependency_name: dependency_name,
+            dependency_name: name,
             package_manager: "shards",
             vulnerable_versions: ["<= 0.10.0"]
           )

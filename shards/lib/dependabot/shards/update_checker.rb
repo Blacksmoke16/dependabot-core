@@ -19,7 +19,7 @@ module Dependabot
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
-        return nil if path_dependency?
+        return if path_dependency?
 
         # Shards is a bit unique in that it's entirely git/VCS based.
         # As such we can't rely on `git_commit_checker.pinned?` since there
