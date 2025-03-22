@@ -47,9 +47,8 @@ module Dependabot
       sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_requirements
         RequirementsUpdater.new(
-          requirements: dependency.requirements,
-          latest_resolvable_version: latest_resolvable_version&.to_s,
-          update_strategy: requirements_update_strategy
+          requirements: old_requirements,
+          target_version: preferred_resolvable_version
         ).updated_requirements
       end
 
