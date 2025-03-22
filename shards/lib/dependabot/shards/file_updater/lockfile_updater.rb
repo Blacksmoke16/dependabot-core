@@ -14,9 +14,10 @@ module Dependabot
 
         require_relative "../utils"
 
-        def initialize(dependencies:, dependency_files:, credentials:)
-          @dependencies = dependencies
-          @dependency_files = dependency_files
+        def initialize(dependency:, manifest:, repo_contents_path:, credentials:)
+          @dependency = dependency
+          @manifest = manifest
+          @repo_contents_path = repo_contents_path
           @credentials = credentials
         end
 
@@ -29,29 +30,24 @@ module Dependabot
 
         sig { returns(String) }
         def generate_updated_lockfile_content
-          SharedHelpers.in_a_temporary_directory(@dependency_files.first.directory) do
-            SharedHelpers.with_git_configured(credentials: @credentials) do
-              Utils.write_manifest_files @dependency_files
+          SharedHelpers.in_a_temporary_repo_directory(manifest.directory, repo_contents_path) do
+            File.write(manifest.name, manifest.content)
 
-              Utils.run_shards_command "lock --update #{dependency.name}"
-              updated_content = File.read(PackageManager::LOCKFILE_FILENAME)
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              Utils.run_shards_command(
+                "lock --update #{dependency.name}",
+                fingerprint: "shards lock --update <dependency_name>"
+              )
 
-              raise "Expected content to change!" if lockfile.content == updated_content
-
-              updated_content
+              File.read(PackageManager::LOCKFILE_FILENAME)
             end
           end
         end
 
-        def dependency
-          # For now, we'll only ever be updating a single dependency for Shards
-          @dependencies.first
-        end
-
-        def lockfile
-          @lockfile ||=
-            @dependency_files.find { |f| f.name == PackageManager::LOCKFILE_FILENAME }
-        end
+        attr_reader :dependency
+        attr_reader :manifest
+        attr_reader :repo_contents_path
+        attr_reader :credentials
       end
     end
   end

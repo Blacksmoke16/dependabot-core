@@ -7,6 +7,7 @@ require "dependabot/shared_helpers"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/version_filters"
+require "dependabot/shards/file_updater/manifest_updater"
 
 module Dependabot
   module Shards
@@ -24,11 +25,7 @@ module Dependabot
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_resolvable_version
-        VersionResolver.new(
-          credentials: credentials,
-          dependency: dependency,
-          dependency_files: dependency_files
-        ).latest_resolvable_version
+        @latest_resolvable_version ||= fetch_latest_resolvable_version
       end
 
       def lowest_security_fix_version
@@ -72,6 +69,10 @@ module Dependabot
 
       private
 
+      def old_requirements
+        dependency.requirements
+      end
+
       def fetch_latest_version
         return if path_dependency?
 
@@ -102,6 +103,12 @@ module Dependabot
         return current_version unless latest_resolvable_version
 
         Version.new(latest_resolvable_version)
+      end
+
+      def unlocked_requirements
+        old_requirements.map do |req|
+          req.merge(requirement: ">= #{dependency.version}")
+        end
       end
 
       def fetch_lowest_security_fix_version
@@ -160,6 +167,18 @@ module Dependabot
         dependency.requirements.any? { |r| r.dig(:source, :type) == "path" }
       end
 
+      def prepare_manifest_for(new_requirements)
+        DependencyFile.new(
+          name: manifest.name,
+          content: FileUpdater::ManifestUpdater.new(
+            dependency.name,
+            manifest.content,
+            new_requirements: new_requirements
+          ).updated_manifest_content,
+          directory: manifest.directory
+        )
+      end
+
       # Dep creation
 
       def version_resolver_for(requirements)
@@ -180,6 +199,14 @@ module Dependabot
           ignored_versions: ignored_versions,
           raise_on_ignored: raise_on_ignored
         )
+      end
+
+      def manifest
+        @manifest ||= dependency_files.find { |file| file.name == PackageManager::MANIFEST_FILENAME }
+      end
+
+      def lockfile
+        @lockfile ||= dependency_files.find { |file| file.name == PackageManager::LOCKFILE_FILENAME }
       end
     end
   end

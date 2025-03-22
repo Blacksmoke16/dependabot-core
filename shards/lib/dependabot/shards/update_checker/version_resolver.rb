@@ -1,168 +1,51 @@
 # typed: true
 # frozen_string_literal: true
 
-require "dependabot/shared_helpers"
-require "dependabot/shards/update_checker"
-require "dependabot/shards/file_parser"
-require "dependabot/shards/version"
-require "dependabot/errors"
+require "dependabot/update_checkers/base"
+require "dependabot/shards/file_updater/lockfile_updater"
 
 module Dependabot
   module Shards
-    class UpdateChecker
+    class UpdateChecker < Dependabot::UpdateCheckers::Base
       class VersionResolver
-        def initialize(dependency:, credentials:,
-                       dependency_files:)
-          @dependency = dependency
-          @dependency_files = dependency_files
-          @credentials = credentials
+        def initialize(dependency:, manifest:, lockfile:, repo_contents_path:, credentials:)
+          @dependency         = dependency
+          @manifest           = manifest
+          @lockfile           = lockfile
+          @credentials        = credentials
+          @repo_contents_path = repo_contents_path
         end
 
         def latest_resolvable_version
           @latest_resolvable_version ||= fetch_latest_resolvable_version
-        rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
-          raise Dependabot::DependencyFileNotResolvable, e.message
         end
 
         private
 
-        attr_reader :dependency
-        attr_reader :credentials
-        attr_reader :dependency_files
-
         def fetch_latest_resolvable_version
-          base_directory = dependency_files.first.directory
-          SharedHelpers.in_a_temporary_directory(base_directory) do
-            write_temporary_dependency_files
-
-            SharedHelpers.with_git_configured(credentials: credentials) do
-              run_shards_lock_command
-            end
-
-            updated_version = fetch_version_from_new_lockfile
-
-            return nil if updated_version.nil?
-            return updated_version if git_dependency?
-
-            version_class.new(updated_version)
-          end
-          # rescue SharedHelpers::HelperSubprocessFailed => e
-          #   retry if better_specification_needed?(e)
-          #   handle_cargo_errors(e)
-        end
-
-        def fetch_version_from_new_lockfile
-          lockfile_content = File.read("shard.lock")
-          versions = YAML.safe_load(lockfile_content).fetch("shards")
-                         .select { |(k)| k == dependency.name }
-                         .map { |(_, attributes)| attributes }
-
-          updated_version =
-            if dependency.top_level?
-              versions.max_by { |o| version_class.new(o.fetch("version")) }
-            else
-              versions.min_by { |o| version_class.new(o.fetch("version")) }
-            end
-
-          return unless updated_version
-
-          version = updated_version.fetch("version")
-
-          # Use the commit hash as it's the most accurate in this context
-          if (match = version.match(/(.*)\+git\.commit\.([\w\d]+)/))
-            return match[1]
-          end
-
-          version
-        end
-
-        # Shell out to Shards, which handles everything for us,
-        # and does so without actually installing anything (so it's fast).
-        def run_shards_lock_command
-          run_shards_command(
-            "shards lock --update"
-          )
-        end
-
-        def run_shards_command(command)
-          start = Time.now
-          command = SharedHelpers.escape_command(command)
-          # Helpers.setup_credentials_in_environment(credentials)
-
-          stdout, process = Open3.capture2e({}, command)
-          time_taken = Time.now - start
-
-          # Raise an error with the output from the shell session if Shards returns a non-zero status
-          return if process.success?
-
-          raise SharedHelpers::HelperSubprocessFailed.new(
-            message: stdout,
-            error_context: {
-              command: command,
-              time_taken: time_taken,
-              process_exit_value: process.to_s
-            }
-          )
-        end
-
-        def write_temporary_dependency_files
-          write_manifest_files
-
-          File.write(lockfile.name, lockfile.content) if lockfile
-        end
-
-        def write_manifest_files
-          dependency_files.each do |file|
-            path = file.name
-            dir = Pathname.new(path).dirname
-            FileUtils.mkdir_p(dir)
-            File.write(file.name, sanitized_manifest_content(file.content))
-          end
-        end
-
-        def git_dependency_version
-          return unless lockfile
-
-          TomlRB.parse(lockfile.content)
-                .fetch("package", [])
-                .select { |p| p["name"] == dependency.name }
-                .find { |p| p["source"].end_with?(dependency.version) }
-                .fetch("version")
-        end
-
-        def git_source_url
-          dependency.requirements
-                    .find { |r| r.dig(:source, :type) == "git" }
-                    &.dig(:source, :url)
-        end
-
-        def sanitized_manifest_content(content)
-          object = YAML.safe_load(content)
-
-          # Only required fields are `name` and `version`
-          YAML.dump({
-            "name" => "dependabot",
-            "version" => "0.1.0",
-            "dependencies" => object["dependencies"] || {},
-            "development_dependencies" => object["development_dependencies"] || {}
-          })
-        end
-
-        def lockfile
-          @lockfile ||= dependency_files
-                        .find { |f| f.name == "shard.lock" }
-        end
-
-        def git_dependency?
-          GitCommitChecker.new(
+          updated_lockfile_content = FileUpdater::LockfileUpdater.new(
             dependency: dependency,
+            manifest: manifest,
+            repo_contents_path: repo_contents_path,
             credentials: credentials
-          ).git_dependency?
+          ).updated_lockfile_content
+
+          return if lockfile && updated_lockfile_content == lockfile.content
+
+          updated_lockfile = DependencyFile.new(
+            name: PackageManager::MANIFEST_FILENAME,
+            content: updated_lockfile_content,
+            directory: manifest.directory
+          )
+
+          YAML.safe_load(updated_lockfile.content)&.dig("shards", dependency.name, "version")
         end
 
-        def version_class
-          dependency.version_class
-        end
+        attr_reader :dependency
+        attr_reader :manifest
+        attr_reader :lockfile
+        attr_reader :repo_contents_path
+        attr_reader :credentials
       end
     end
   end
