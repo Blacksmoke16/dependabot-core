@@ -102,8 +102,8 @@ module Dependabot
       def lockfile_dependencies(dependency_set)
         return unless lockfile
 
-        parsed_lockfile["shards"].each do |name, attributes|
-          version = attributes["version"]
+        parsed_lockfile["shards"].each do |name, _|
+          version = dependency_version(name: name)
           next unless version.is_a?(String)
 
           dependency_set << build_lockfile_dependency(name, version)
@@ -159,7 +159,14 @@ module Dependabot
         shard = lockfile_details(name: name)
         return unless shard
 
-        shard["version"]
+        version = shard["version"]
+        return unless version.is_a?(String)
+
+        if version.include?("+git.commit")
+          version.split("+git.commit.")[1]
+        else
+          version
+        end
       end
 
       sig do

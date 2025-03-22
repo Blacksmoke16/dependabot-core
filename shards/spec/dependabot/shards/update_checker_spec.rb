@@ -10,8 +10,6 @@ require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Shards::UpdateChecker do
-  it_behaves_like "an update checker"
-
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -50,11 +48,13 @@ RSpec.describe Dependabot::Shards::UpdateChecker do
   let(:files) { project_dependency_files(project_name) }
   let(:project_name) { "exact_version" }
 
+  it_behaves_like "an update checker"
+
   describe "#latest_version" do
     subject { checker.latest_version }
 
     context "with a path source" do
-      context "that is the dependency we're checking" do
+      context "when it is the dependency we're checking" do
         let(:dependency_name) { "db" }
         let(:dependency_version) { "0.10.0" }
         let(:requirements) do
@@ -71,10 +71,12 @@ RSpec.describe Dependabot::Shards::UpdateChecker do
     end
 
     context "with a git source" do
+      let(:upload_pack_fixture) { "db" }
       let(:service_pack_url) do
         "https://github.com/crystal-lang/crystal-db.git/info/refs" \
           "?service=git-upload-pack"
       end
+
       before do
         stub_request(:get, service_pack_url)
           .to_return(
@@ -85,7 +87,6 @@ RSpec.describe Dependabot::Shards::UpdateChecker do
             }
           )
       end
-      let(:upload_pack_fixture) { "db" }
 
       context "when using default requirement" do
         let(:dependency_version) { "0.10.0" }
@@ -103,8 +104,8 @@ RSpec.describe Dependabot::Shards::UpdateChecker do
           }]
         end
 
-        # Should use latest tag
-        it { is_expected.to eq(Gem::Version.new("0.13.1")) }
+        # Should use commit of latest tag
+        it { is_expected.to eq("3eaac85a5d4b7bee565b55dcb584e84e29fc5567") }
       end
 
       context "when pinned to a specific commit" do
@@ -126,7 +127,7 @@ RSpec.describe Dependabot::Shards::UpdateChecker do
         end
 
         # Should remain unchanged
-        it { is_expected.to eq("1d0105ffeb1f983fafdda7ec2fd68916f74b4a4c") }
+        it { is_expected.to eq(Gem::Version.new("0.13.1")) }
       end
 
       context "when pinned to a specific branch" do
@@ -169,8 +170,8 @@ RSpec.describe Dependabot::Shards::UpdateChecker do
           }]
         end
 
-        # Should use latest tag
-        it { is_expected.to eq(Gem::Version.new("0.13.1")) }
+        # Should use commit of latest tag
+        it { is_expected.to eq("3eaac85a5d4b7bee565b55dcb584e84e29fc5567") }
       end
     end
   end

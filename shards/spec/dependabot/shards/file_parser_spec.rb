@@ -84,7 +84,8 @@ RSpec.describe Dependabot::Shards::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("db") }
-        its(:version) { is_expected.to eq("0.13.0+git.commit.1d0105ffeb1f983fafdda7ec2fd68916f74b4a4c") }
+        its(:version) { is_expected.to eq("1d0105ffeb1f983fafdda7ec2fd68916f74b4a4c") }
+
         its(:requirements) do
           is_expected.to eq(
             [{
@@ -95,8 +96,8 @@ RSpec.describe Dependabot::Shards::FileParser do
                 branch: nil,
                 ref: "1d0105ffeb1f983fafdda7ec2fd68916f74b4a4c",
                 type: "git",
-                url: "https://github.com/crystal-lang/crystal-db.git",
-              },
+                url: "https://github.com/crystal-lang/crystal-db.git"
+              }
             }]
           )
         end
@@ -111,7 +112,8 @@ RSpec.describe Dependabot::Shards::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("db") }
-        its(:version) { is_expected.to eq("0.13.1+git.commit.3eaac85a5d4b7bee565b55dcb584e84e29fc5567") }
+        its(:version) { is_expected.to eq("3eaac85a5d4b7bee565b55dcb584e84e29fc5567") }
+
         its(:requirements) do
           is_expected.to eq(
             [{
@@ -122,8 +124,8 @@ RSpec.describe Dependabot::Shards::FileParser do
                 branch: "master",
                 ref: nil,
                 type: "git",
-                url: "https://github.com/crystal-lang/crystal-db.git",
-              },
+                url: "https://github.com/crystal-lang/crystal-db.git"
+              }
             }]
           )
         end
@@ -138,7 +140,8 @@ RSpec.describe Dependabot::Shards::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("db") }
-        its(:version) { is_expected.to eq("0.13.0+git.commit.7fff589e026412646b33cef80f78cd1c7fd072aa") }
+        its(:version) { is_expected.to eq("7fff589e026412646b33cef80f78cd1c7fd072aa") }
+
         its(:requirements) do
           is_expected.to eq(
             [{
@@ -149,8 +152,8 @@ RSpec.describe Dependabot::Shards::FileParser do
                 branch: nil,
                 ref: "v0.13.0",
                 type: "git",
-                url: "https://github.com/crystal-lang/crystal-db.git",
-              },
+                url: "https://github.com/crystal-lang/crystal-db.git"
+              }
             }]
           )
         end
@@ -158,12 +161,14 @@ RSpec.describe Dependabot::Shards::FileParser do
     end
 
     context "with gitlab source" do
-      let(:project_name) { "gitlab_source" }
       subject { dependencies[0] }
+
+      let(:project_name) { "gitlab_source" }
 
       it { is_expected.to be_a(Dependabot::Dependency) }
       its(:name) { is_expected.to eq("spectator") }
       its(:version) { is_expected.to be_nil }
+
       its(:requirements) do
         is_expected.to eq(
           [{
@@ -174,20 +179,22 @@ RSpec.describe Dependabot::Shards::FileParser do
               branch: nil,
               ref: nil,
               type: "git",
-              url: "https://gitlab.com/arctic-fox/spectator.git",
-            },
+              url: "https://gitlab.com/arctic-fox/spectator.git"
+            }
           }]
         )
       end
     end
 
     context "with bitbucket source" do
-      let(:project_name) { "bitbucket_source" }
       subject { dependencies[0] }
+
+      let(:project_name) { "bitbucket_source" }
 
       it { is_expected.to be_a(Dependabot::Dependency) }
       its(:name) { is_expected.to eq("test") }
       its(:version) { is_expected.to be_nil }
+
       its(:requirements) do
         is_expected.to eq(
           [{
@@ -198,20 +205,22 @@ RSpec.describe Dependabot::Shards::FileParser do
               branch: nil,
               ref: nil,
               type: "git",
-              url: "https://bitbucket.com/org/test.git",
-            },
+              url: "https://bitbucket.com/org/test.git"
+            }
           }]
         )
       end
     end
 
     context "with git source" do
-      let(:project_name) { "git_source" }
       subject { dependencies[0] }
+
+      let(:project_name) { "git_source" }
 
       it { is_expected.to be_a(Dependabot::Dependency) }
       its(:name) { is_expected.to eq("geoffrey") }
       its(:version) { is_expected.to be_nil }
+
       its(:requirements) do
         is_expected.to eq(
           [{
@@ -222,8 +231,8 @@ RSpec.describe Dependabot::Shards::FileParser do
               branch: nil,
               ref: nil,
               type: "git",
-              url: "https://codeberg.org/skinnyjames/geoffrey.git",
-            },
+              url: "https://codeberg.org/skinnyjames/geoffrey.git"
+            }
           }]
         )
       end
@@ -238,13 +247,14 @@ RSpec.describe Dependabot::Shards::FileParser do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("test") }
         its(:version) { is_expected.to be_nil }
+
         its(:requirements) do
           is_expected.to eq(
             [{
               requirement: nil,
               file: "shard.yml",
               groups: ["runtime"],
-              source: { type: "path" },
+              source: { type: "path" }
             }]
           )
         end
@@ -252,37 +262,39 @@ RSpec.describe Dependabot::Shards::FileParser do
     end
 
     context "with an unsupported lockfile source" do
-      let(:project_name) { "unsupported_source" }
-
       subject { dependencies[0] }
+
+      let(:project_name) { "unsupported_source" }
 
       it { is_expected.to be_a(Dependabot::Dependency) }
       its(:name) { is_expected.to eq("fossil") }
       its(:version) { is_expected.to be_nil }
+
       its(:requirements) do
         is_expected.to eq(
           [{
             requirement: nil,
             file: "shard.yml",
             groups: ["runtime"],
-            source: nil,
+            source: nil
           }]
         )
       end
     end
 
-    context "for development dependencies" do
+    context "with development dependencies" do
+      subject { dependencies.first }
+
       let(:project_name) { "development_dependencies" }
 
       it "includes development dependencies" do
         expect(dependencies.length).to eq(1)
       end
 
-      subject { dependencies.first }
-
       it { is_expected.to be_a(Dependabot::Dependency) }
       its(:name) { is_expected.to eq("db") }
       its(:version) { is_expected.to eq("0.13.1") }
+
       its(:requirements) do
         is_expected.to eq(
           [{
@@ -293,8 +305,8 @@ RSpec.describe Dependabot::Shards::FileParser do
               branch: nil,
               ref: nil,
               type: "git",
-              url: "https://github.com/crystal-lang/crystal-db.git",
-            },
+              url: "https://github.com/crystal-lang/crystal-db.git"
+            }
           }]
         )
       end
@@ -307,6 +319,7 @@ RSpec.describe Dependabot::Shards::FileParser do
 
       describe "top level dependencies" do
         subject { dependencies.select(&:top_level?) }
+
         its(:length) { is_expected.to eq(2) }
       end
 

@@ -23,16 +23,15 @@ module Dependabot
         # If the dependency is pinned via:
 
         # A branch, the latest version is the latest commit on that branch
-        return git_commit_checker.head_commit_for_current_branch unless dependency_source_details[:branch].nil?
+        # return git_commit_checker.head_commit_for_current_branch unless dependency_source_details[:branch].nil?
+        return git_commit_checker.head_commit_for_current_branch unless git_commit_checker.pinned?
 
-        # A tag, fetch the version of the latest tag
-        if git_commit_checker.pinned_ref_looks_like_version?
-          return git_commit_checker.local_tag_for_latest_version.fetch(:version)
-        end
-
-        # A commit, return as is
-        if (v = dependency.version) && git_commit_checker.ref_looks_like_commit_sha?(v)
-          return dependency.version
+        # If the dependency is pinned to a tag that looks like a version then
+        # we want to update that tag. The latest version will then be the SHA
+        # of the latest tag that looks like a version.
+        if git_commit_checker.pinned_ref_looks_like_version? &&
+           (ltflv = git_commit_checker.local_tag_for_latest_version)
+          return ltflv.fetch(:commit_sha)
         end
 
         # None of the above, fallback on the version of the latest tag
