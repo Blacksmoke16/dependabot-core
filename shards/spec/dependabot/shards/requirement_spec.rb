@@ -6,6 +6,7 @@ require "dependabot/shards/requirement"
 
 RSpec.describe Dependabot::Shards::Requirement do
   subject(:requirement) { described_class.new(requirement_string) }
+
   let(:requirement_string) { ">=1.0.0" }
 
   describe ".new" do
@@ -13,51 +14,61 @@ RSpec.describe Dependabot::Shards::Requirement do
 
     context "with a comma-separated string" do
       let(:requirement_string) { ">= 1.0.0, < 1.2.1" }
+
       it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0", "< 1.2.1")) }
     end
 
     context "with an explicit version" do
       let(:requirement_string) { "1.5.1" }
+
       it { is_expected.to eq(described_class.new("1.5.1")) }
     end
 
     context "with a > version" do
       let(:requirement_string) { "> 1.5.1" }
+
       it { is_expected.to eq(described_class.new("> 1.5.1")) }
     end
 
     context "with a >= version" do
       let(:requirement_string) { ">= 1.5.1" }
+
       it { is_expected.to eq(described_class.new(">= 1.5.1")) }
     end
 
     context "with a < version" do
       let(:requirement_string) { "< 1.5.1" }
+
       it { is_expected.to eq(described_class.new("< 1.5.1")) }
     end
 
     context "with a <= version" do
       let(:requirement_string) { "<= 1.5.1" }
+
       it { is_expected.to eq(described_class.new("<= 1.5.1")) }
     end
 
     context "with a != version" do
       let(:requirement_string) { "!= 1.5.1" }
+
       it { is_expected.to eq(described_class.new("!= 1.5.1")) }
     end
 
     context "with a ~> version" do
       let(:requirement_string) { "~> 1.5.1" }
+
       it { is_expected.to eq(described_class.new("~> 1.5.1")) }
     end
 
     context "with a wildcard version" do
       let(:requirement_string) { "*" }
+
       it { is_expected.to eq(described_class.new(">= 0")) }
     end
 
     context "with an empty string" do
       let(:requirement_string) { "" }
+
       it { is_expected.to eq(described_class.new(">= 0")) }
     end
   end

@@ -37,7 +37,7 @@ RSpec.describe Dependabot::Shards::FileParser do
         its(:requirements) do
           is_expected.to eq(
             [{
-              requirement: nil,
+              requirement: ">= 0",
               file: "shard.yml",
               groups: ["runtime"],
               source: {
@@ -198,7 +198,7 @@ RSpec.describe Dependabot::Shards::FileParser do
       its(:requirements) do
         is_expected.to eq(
           [{
-            requirement: nil,
+            requirement: ">= 0",
             file: "shard.yml",
             groups: ["runtime"],
             source: {
@@ -224,7 +224,7 @@ RSpec.describe Dependabot::Shards::FileParser do
       its(:requirements) do
         is_expected.to eq(
           [{
-            requirement: nil,
+            requirement: ">= 0",
             file: "shard.yml",
             groups: ["runtime"],
             source: {
@@ -267,13 +267,13 @@ RSpec.describe Dependabot::Shards::FileParser do
       let(:project_name) { "unsupported_source" }
 
       it { is_expected.to be_a(Dependabot::Dependency) }
-      its(:name) { is_expected.to eq("fossil") }
+      its(:name) { is_expected.to eq("svn") }
       its(:version) { is_expected.to be_nil }
 
       its(:requirements) do
         is_expected.to eq(
           [{
-            requirement: nil,
+            requirement: ">= 0",
             file: "shard.yml",
             groups: ["runtime"],
             source: nil

@@ -85,12 +85,20 @@ module Dependabot
       def build_manifest_dependency(name, attributes, keys)
         group = T.must(keys[:group])
 
+        # If a shard does not specify a tag, version, commit, path, or branch
+        # the default behavior is to treat it as unbound
+        requirement = if %w(tag version commit path branch).none? { |k| attributes.key?(k) }
+                        Requirement.new("*").to_s
+                      else
+                        attributes["version"]
+                      end
+
         Dependency.new(
           name: name,
           version: dependency_version(name: name),
           package_manager: PackageManager::NAME,
           requirements: [{
-            requirement: attributes["version"],
+            requirement: requirement,
             file: PackageManager::MANIFEST_FILENAME,
             source: dependency_source(name: name, attributes: attributes),
             groups: [group]

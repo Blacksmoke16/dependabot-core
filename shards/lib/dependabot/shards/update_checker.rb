@@ -19,30 +19,7 @@ module Dependabot
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
-        return if path_dependency?
-
-        # Shards is a bit unique in that it's entirely git/VCS based.
-        # As such we can't rely on `git_commit_checker.pinned?` since there
-        # will not be a `ref` in the happy path of using a `version` requirement.
-
-        # Instead we must check for more specific matchers,
-        # falling back on the latest
-
-        # A branch, the latest version is the latest commit on that branch
-        return git_commit_checker.head_commit_for_current_branch unless dependency_source_details[:branch].nil?
-
-        # A tag, fetch the latest tag
-        if git_commit_checker.pinned_ref_looks_like_version?
-          return git_commit_checker.local_tag_for_latest_version&.fetch(:version)
-        end
-
-        # A commit, return as is
-        if (v = dependency.version) && git_commit_checker.ref_looks_like_commit_sha?(v)
-          return v
-        end
-
-        # None of the above, fallback on the version of the latest tag
-        git_commit_checker.local_tag_for_latest_version&.fetch(:version)
+        @latest_version ||= fetch_latest_version
       end
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
@@ -95,6 +72,38 @@ module Dependabot
 
       private
 
+      def fetch_latest_version
+        return if path_dependency?
+
+        # Shards is a bit unique in that it's entirely git/VCS based.
+        # As such we can't rely on `git_commit_checker.pinned?` since there
+        # will not be a `ref` in the happy path of using a `version` requirement.
+
+        # Instead we must check for more specific matchers,
+        # falling back on the latest
+
+        # A branch, the latest version is the latest commit on that branch
+        return git_commit_checker.head_commit_for_current_branch unless dependency_source_details[:branch].nil?
+
+        # A tag, fetch the latest tag
+        return latest_version_tag&.fetch(:version) if git_commit_checker.pinned_ref_looks_like_version?
+
+        # A commit, return as is
+        if (v = dependency.version) && git_commit_checker.ref_looks_like_commit_sha?(v)
+          return v
+        end
+
+        # None of the above, fallback on the version of the latest tag
+        latest_version_tag&.fetch(:version)
+      end
+
+      def fetch_latest_resolvable_version
+        latest_resolvable_version = version_resolver_for(unlocked_requirements).latest_resolvable_version
+        return current_version unless latest_resolvable_version
+
+        Version.new(latest_resolvable_version)
+      end
+
       def fetch_lowest_security_fix_version
         return unless git_commit_checker.pinned_ref_looks_like_version? && latest_version_tag
 
@@ -140,16 +149,6 @@ module Dependabot
         dependency.source_details
       end
 
-      sig { returns(Dependabot::GitCommitChecker) }
-      def git_commit_checker
-        @git_commit_checker ||= Dependabot::GitCommitChecker.new(
-          dependency: dependency,
-          credentials: credentials,
-          ignored_versions: ignored_versions,
-          raise_on_ignored: raise_on_ignored
-        )
-      end
-
       sig { returns(T::Boolean) }
       def library?
         # If it has a lockfile, treat it as an application. Otherwise treat it as a library.
@@ -159,6 +158,28 @@ module Dependabot
       sig { returns(T::Boolean) }
       def path_dependency?
         dependency.requirements.any? { |r| r.dig(:source, :type) == "path" }
+      end
+
+      # Dep creation
+
+      def version_resolver_for(requirements)
+        VersionResolver.new(
+          dependency: dependency,
+          manifest: prepare_manifest_for(requirements),
+          lockfile: lockfile,
+          repo_contents_path: repo_contents_path,
+          credentials: credentials
+        )
+      end
+
+      sig { returns(Dependabot::GitCommitChecker) }
+      def git_commit_checker
+        @git_commit_checker ||= Dependabot::GitCommitChecker.new(
+          dependency: dependency,
+          credentials: credentials,
+          ignored_versions: ignored_versions,
+          raise_on_ignored: raise_on_ignored
+        )
       end
     end
   end
