@@ -192,11 +192,17 @@ module Dependabot
         # TODO: Support Mercurial and Fossil?
         return unless url
 
+        ref = if (branch = attributes["branch"])
+                branch
+              elsif (v = dependency_version(name: name))
+                "v#{v}"
+              end
+
         {
           type: "git",
           url: url,
           branch: attributes["branch"],
-          ref: attributes["tag"] || attributes["commit"]
+          ref: attributes["tag"] || attributes["commit"] || ref
         }
       end
 

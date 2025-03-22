@@ -42,7 +42,7 @@ RSpec.describe Dependabot::Shards::FileParser do
               groups: ["runtime"],
               source: {
                 branch: nil,
-                ref: nil,
+                ref: "v1.2.3",
                 type: "git",
                 url: "https://github.com/datanoise/openssl.cr.git"
               }
@@ -66,7 +66,7 @@ RSpec.describe Dependabot::Shards::FileParser do
               groups: ["runtime"],
               source: {
                 branch: nil,
-                ref: nil,
+                ref: "v0.13.1",
                 type: "git",
                 url: "https://github.com/crystal-lang/crystal-db.git"
               }
@@ -122,7 +122,7 @@ RSpec.describe Dependabot::Shards::FileParser do
               groups: ["runtime"],
               source: {
                 branch: "master",
-                ref: nil,
+                ref: "master",
                 type: "git",
                 url: "https://github.com/crystal-lang/crystal-db.git"
               }
@@ -303,7 +303,7 @@ RSpec.describe Dependabot::Shards::FileParser do
             groups: ["development"],
             source: {
               branch: nil,
-              ref: nil,
+              ref: "v0.13.1",
               type: "git",
               url: "https://github.com/crystal-lang/crystal-db.git"
             }

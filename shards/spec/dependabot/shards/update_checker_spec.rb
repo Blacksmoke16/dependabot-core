@@ -41,17 +41,33 @@ RSpec.describe Dependabot::Shards::UpdateChecker do
       type: "git",
       url: "https://github.com/crystal-lang/crystal-db.git",
       branch: nil,
-      ref: nil
+      ref: "v0.10.0"
     } }]
   end
   let(:credentials) { github_credentials }
   let(:files) { project_dependency_files(project_name) }
   let(:project_name) { "exact_version" }
+  let(:upload_pack_fixture) { "db" }
+  let(:service_pack_url) do
+    "https://github.com/crystal-lang/crystal-db.git/info/refs" \
+      "?service=git-upload-pack"
+  end
+
+  before do
+    stub_request(:get, service_pack_url)
+      .to_return(
+        status: 200,
+        body: fixture("git", "upload_packs", upload_pack_fixture),
+        headers: {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+      )
+  end
 
   it_behaves_like "an update checker"
 
   describe "#latest_version" do
-    subject { checker.latest_version }
+    subject(:latest_version) { checker.latest_version }
 
     context "with a path source" do
       context "when it is the dependency we're checking" do
@@ -71,21 +87,26 @@ RSpec.describe Dependabot::Shards::UpdateChecker do
     end
 
     context "with a git source" do
-      let(:upload_pack_fixture) { "db" }
-      let(:service_pack_url) do
-        "https://github.com/crystal-lang/crystal-db.git/info/refs" \
-          "?service=git-upload-pack"
+      context "when the user is ignoring the latest version" do
+        let(:ignored_versions) { [">= 0.13.0"] }
+
+        it { is_expected.to eq(Gem::Version.new("0.12.0")) }
       end
 
-      before do
-        stub_request(:get, service_pack_url)
-          .to_return(
-            status: 200,
-            body: fixture("git", "upload_packs", upload_pack_fixture),
-            headers: {
-              "content-type" => "application/x-git-upload-pack-advertisement"
-            }
-          )
+      context "when the user is ignoring all versions" do
+        let(:ignored_versions) { [">= 0"] }
+
+        it "returns latest_resolvable_version" do
+          expect(latest_version).to be_nil
+        end
+
+        context "when raise_on_ignored is enabled" do
+          let(:raise_on_ignored) { true }
+
+          it "raises an error" do
+            expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
+          end
+        end
       end
 
       context "when using default requirement" do
@@ -104,8 +125,8 @@ RSpec.describe Dependabot::Shards::UpdateChecker do
           }]
         end
 
-        # Should use commit of latest tag
-        it { is_expected.to eq("3eaac85a5d4b7bee565b55dcb584e84e29fc5567") }
+        # Should use the latest tag
+        it { is_expected.to eq(Gem::Version.new("0.13.1")) }
       end
 
       context "when pinned to a specific commit" do
@@ -127,7 +148,7 @@ RSpec.describe Dependabot::Shards::UpdateChecker do
         end
 
         # Should remain unchanged
-        it { is_expected.to eq(Gem::Version.new("0.13.1")) }
+        it { is_expected.to eq(dependency_version) }
       end
 
       context "when pinned to a specific branch" do
@@ -171,7 +192,31 @@ RSpec.describe Dependabot::Shards::UpdateChecker do
         end
 
         # Should use commit of latest tag
-        it { is_expected.to eq("3eaac85a5d4b7bee565b55dcb584e84e29fc5567") }
+        it { is_expected.to eq(Gem::Version.new("0.13.1")) }
+      end
+    end
+  end
+
+  describe "#lowest_security_fix_version" do
+    subject(:lowest_security_fix_version) { checker.lowest_security_fix_version }
+
+    it "finds the lowest available non-vulnerable version" do
+      expect(lowest_security_fix_version).to eq(Gem::Version.new("0.10.1"))
+    end
+
+    context "with a security vulnerability" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "shards",
+            vulnerable_versions: ["<= 0.10.0"]
+          )
+        ]
+      end
+
+      it "finds the lowest available non-vulnerable version" do
+        expect(lowest_security_fix_version).to eq(Gem::Version.new("0.10.1"))
       end
     end
   end
