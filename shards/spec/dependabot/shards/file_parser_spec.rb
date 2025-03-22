@@ -8,8 +8,6 @@ require "dependabot/shards/file_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Shards::FileParser do
-  it_behaves_like "a dependency file parser"
-
   let(:files) { project_dependency_files(project_name) }
   let(:project_name) { "simple" }
   let(:parser) { described_class.new(dependency_files: files, source: source) }
@@ -20,6 +18,8 @@ RSpec.describe Dependabot::Shards::FileParser do
       directory: "/"
     )
   end
+
+  it_behaves_like "a dependency file parser"
 
   describe "parse" do
     subject(:dependencies) { parser.parse }
@@ -33,18 +33,19 @@ RSpec.describe Dependabot::Shards::FileParser do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("openssl") }
         its(:version) { is_expected.to eq("1.2.3") }
+
         its(:requirements) do
           is_expected.to eq(
             [{
               requirement: nil,
               file: "shard.yml",
-              groups: ["dependencies"],
+              groups: ["runtime"],
               source: {
                 branch: nil,
                 ref: nil,
                 type: "git",
-                url: "https://github.com/datanoise/openssl.cr.git",
-              },
+                url: "https://github.com/datanoise/openssl.cr.git"
+              }
             }]
           )
         end
@@ -56,18 +57,19 @@ RSpec.describe Dependabot::Shards::FileParser do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("db") }
         its(:version) { is_expected.to eq("0.13.1") }
+
         its(:requirements) do
           is_expected.to eq(
             [{
               requirement: "~> 0.13.0",
               file: "shard.yml",
-              groups: ["dependencies"],
+              groups: ["runtime"],
               source: {
                 branch: nil,
                 ref: nil,
                 type: "git",
-                url: "https://github.com/crystal-lang/crystal-db.git",
-              },
+                url: "https://github.com/crystal-lang/crystal-db.git"
+              }
             }]
           )
         end
@@ -88,7 +90,7 @@ RSpec.describe Dependabot::Shards::FileParser do
             [{
               requirement: nil,
               file: "shard.yml",
-              groups: ["dependencies"],
+              groups: ["runtime"],
               source: {
                 branch: nil,
                 ref: "1d0105ffeb1f983fafdda7ec2fd68916f74b4a4c",
@@ -115,7 +117,7 @@ RSpec.describe Dependabot::Shards::FileParser do
             [{
               requirement: nil,
               file: "shard.yml",
-              groups: ["dependencies"],
+              groups: ["runtime"],
               source: {
                 branch: "master",
                 ref: nil,
@@ -142,7 +144,7 @@ RSpec.describe Dependabot::Shards::FileParser do
             [{
               requirement: nil,
               file: "shard.yml",
-              groups: ["dependencies"],
+              groups: ["runtime"],
               source: {
                 branch: nil,
                 ref: "v0.13.0",
@@ -167,7 +169,7 @@ RSpec.describe Dependabot::Shards::FileParser do
           [{
             requirement: "~> 0.12.0",
             file: "shard.yml",
-            groups: ["dependencies"],
+            groups: ["runtime"],
             source: {
               branch: nil,
               ref: nil,
@@ -191,7 +193,7 @@ RSpec.describe Dependabot::Shards::FileParser do
           [{
             requirement: nil,
             file: "shard.yml",
-            groups: ["dependencies"],
+            groups: ["runtime"],
             source: {
               branch: nil,
               ref: nil,
@@ -215,7 +217,7 @@ RSpec.describe Dependabot::Shards::FileParser do
           [{
             requirement: nil,
             file: "shard.yml",
-            groups: ["dependencies"],
+            groups: ["runtime"],
             source: {
               branch: nil,
               ref: nil,
@@ -241,7 +243,7 @@ RSpec.describe Dependabot::Shards::FileParser do
             [{
               requirement: nil,
               file: "shard.yml",
-              groups: ["dependencies"],
+              groups: ["runtime"],
               source: { type: "path" },
             }]
           )
@@ -262,7 +264,7 @@ RSpec.describe Dependabot::Shards::FileParser do
           [{
             requirement: nil,
             file: "shard.yml",
-            groups: ["dependencies"],
+            groups: ["runtime"],
             source: nil,
           }]
         )
@@ -286,7 +288,7 @@ RSpec.describe Dependabot::Shards::FileParser do
           [{
             requirement: "~> 0.13.0",
             file: "shard.yml",
-            groups: ["development_dependencies"],
+            groups: ["development"],
             source: {
               branch: nil,
               ref: nil,

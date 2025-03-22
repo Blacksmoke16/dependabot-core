@@ -15,16 +15,24 @@ module Dependabot
   module Shards
     class FileParser < Dependabot::FileParsers::Base
       require "dependabot/file_parsers/base/dependency_set"
+      require_relative "utils"
 
-      DEPENDENCY_TYPES = %w(dependencies development_dependencies).freeze
+      DEPENDENCY_GROUP_KEYS = T.let([
+        {
+          manifest: "dependencies",
+          group: "runtime"
+        },
+        {
+          manifest: "development_dependencies",
+          group: "development"
+        }
+      ].freeze, T::Array[T::Hash[Symbol, String]])
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = T.let(DependencySet.new, DependencySet)
-
         manifest_dependencies dependency_set
         lockfile_dependencies dependency_set
-
         dependency_set.dependencies
       end
 
@@ -33,7 +41,8 @@ module Dependabot
         @ecosystem ||= T.let(begin
           Ecosystem.new(
             name: ECOSYSTEM,
-            package_manager: package_manager
+            package_manager: package_manager,
+            language: language
           )
         end, T.nilable(Dependabot::Ecosystem))
       end
@@ -47,10 +56,12 @@ module Dependabot
 
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def manifest_dependencies(dependency_set)
-        DEPENDENCY_TYPES.each do |type|
-          next unless parsed_shard_yaml[type].is_a?(Hash)
+        DEPENDENCY_GROUP_KEYS.each do |keys|
+          manifest = keys[:manifest]
+          next unless manifest.is_a?(String)
+          next unless parsed_shard_yaml[manifest].is_a?(Hash)
 
-          parsed_shard_yaml[type].each do |name, attributes|
+          parsed_shard_yaml[manifest].each do |name, attributes|
             if lockfile
               version = dependency_version(name: name)
 
@@ -59,22 +70,30 @@ module Dependabot
               next unless version&.match?(/^\d/)
             end
 
-            dependency_set << build_manifest_dependency(name, attributes, type)
+            dependency_set << build_manifest_dependency(name, attributes, keys)
           end
         end
       end
 
-      sig { params(name: String, attributes: T::Hash[Symbol, String], type: String).returns(Dependabot::Dependency) }
-      def build_manifest_dependency(name, attributes, type)
+      sig do
+        params(
+          name: String,
+          attributes: T::Hash[Symbol, String],
+          keys: T::Hash[Symbol, String]
+        ).returns(Dependabot::Dependency)
+      end
+      def build_manifest_dependency(name, attributes, keys)
+        group = T.must(keys[:group])
+
         Dependency.new(
           name: name,
           version: dependency_version(name: name),
-          package_manager: "shards",
+          package_manager: PackageManager::NAME,
           requirements: [{
             requirement: attributes["version"],
             file: PackageManager::MANIFEST_FILENAME,
             source: dependency_source(name: name, attributes: attributes),
-            groups: [type]
+            groups: [group]
           }]
         )
       end
@@ -84,7 +103,10 @@ module Dependabot
         return unless lockfile
 
         parsed_lockfile["shards"].each do |name, attributes|
-          dependency_set << build_lockfile_dependency(name, attributes["version"])
+          version = attributes["version"]
+          next unless version.is_a?(String)
+
+          dependency_set << build_lockfile_dependency(name, version)
         end
       end
 
@@ -94,8 +116,7 @@ module Dependabot
           name: name,
           version: version,
           requirements: [],
-          package_manager: "shards",
-          subdependency_metadata: [] # TODO: Do we have a way to even know this?
+          package_manager: PackageManager::NAME
         )
       end
 
@@ -138,14 +159,15 @@ module Dependabot
         shard = lockfile_details(name: name)
         return unless shard
 
-        shard.fetch("version")
+        shard["version"]
       end
 
-      sig {
+      sig do
         params(name: String,
                attributes: T::Hash[String,
-                                   T.untyped]).returns(T.nilable(T::Hash[Symbol, T.nilable(String)]))
-      }
+                                   T.untyped])
+          .returns(T.nilable(T::Hash[Symbol, T.nilable(String)]))
+      end
       def dependency_source(name:, attributes:)
         return { type: "path" } if attributes.key?("path")
 
@@ -184,11 +206,38 @@ module Dependabot
         )
       end
 
+      sig { returns(T.nilable(Ecosystem::VersionManager)) }
+      def language
+        version = crystal_version
+        return unless version
+
+        requirement =
+          if (req = parsed_shard_yaml["crystal"])
+            Requirement.new req
+          end
+
+        Language.new(
+          version,
+          requirement: requirement
+        )
+      end
+
       sig { returns(T.nilable(String)) }
       def shards_version
         @shards_version ||= T.let(
           begin
-            version = SharedHelpers.run_shell_command("shards --version")
+            version = Utils.run_shards_command("--version")
+            version.match(Dependabot::Ecosystem::VersionManager::DEFAULT_VERSION_PATTERN)&.captures&.first
+          end,
+          T.nilable(String)
+        )
+      end
+
+      sig { returns(T.nilable(String)) }
+      def crystal_version
+        @crystal_version ||= T.let(
+          begin
+            version = Utils.run_crystal_command("--version")
             version.match(Dependabot::Ecosystem::VersionManager::DEFAULT_VERSION_PATTERN)&.captures&.first
           end,
           T.nilable(String)

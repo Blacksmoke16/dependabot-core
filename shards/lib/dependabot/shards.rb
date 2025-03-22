@@ -9,6 +9,7 @@ require "dependabot/shards/file_parser"
 require "dependabot/shards/update_checker"
 require "dependabot/shards/file_updater"
 require "dependabot/shards/metadata_finder"
+require "dependabot/shards/language"
 require "dependabot/shards/requirement"
 require "dependabot/shards/version"
 
