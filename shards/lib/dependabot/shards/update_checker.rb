@@ -28,20 +28,20 @@ module Dependabot
         @latest_resolvable_version ||= fetch_latest_resolvable_version
       end
 
+      def latest_resolvable_version_with_no_unlock
+        raise NotImplementedError
+      end
+
       def lowest_security_fix_version
         @lowest_security_fix_version ||= fetch_lowest_security_fix_version
       end
 
-      sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
-      def latest_resolvable_version_with_no_unlock
-        return nil if path_dependency?
+      def lowest_resolvable_security_fix_version
+        raise "Dependency not vulnerable!" unless vulnerable?
 
-        @latest_resolvable_version_with_no_unlock ||=
-          VersionResolver.new(
-            credentials: credentials,
-            dependency: dependency,
-            dependency_files: dependency_files
-          ).latest_resolvable_version
+        return @lowest_resolvable_security_fix_version if defined?(@lowest_resolvable_security_fix_version)
+
+        @lowest_resolvable_security_fix_version = fetch_lowest_resolvable_security_fix_version
       end
 
       sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
@@ -50,20 +50,6 @@ module Dependabot
           requirements: old_requirements,
           target_version: preferred_resolvable_version
         ).updated_requirements
-      end
-
-      sig { override.returns(T::Boolean) }
-      def requirements_unlocked_or_can_be?
-        !requirements_update_strategy.lockfile_only?
-      end
-
-      sig { returns(RequirementsUpdateStrategy) }
-      def requirements_update_strategy
-        # If passed in as an option (in the base class) honour that option
-        return @requirements_update_strategy if @requirements_update_strategy
-
-        # Otherwise, widen ranges for libraries and bump versions for apps
-        library? ? RequirementsUpdateStrategy::WidenRanges : RequirementsUpdateStrategy::BumpVersionsIfNecessary
       end
 
       private
@@ -104,9 +90,24 @@ module Dependabot
         Version.new(latest_resolvable_version)
       end
 
+      def fetch_lowest_resolvable_security_fix_version
+        lowest_resolvable_security_fix_version = version_resolver_for(
+          force_lowest_security_fix_requirements
+        ).latest_resolvable_version
+        return unless lowest_resolvable_security_fix_version
+
+        Version.new(lowest_resolvable_security_fix_version)
+      end
+
       def unlocked_requirements
         old_requirements.map do |req|
           req.merge(requirement: ">= #{dependency.version}")
+        end
+      end
+
+      def force_lowest_security_fix_requirements
+        old_requirements.map do |req|
+          req.merge(requirement: "= #{lowest_security_fix_version}")
         end
       end
 
@@ -155,11 +156,7 @@ module Dependabot
         dependency.source_details
       end
 
-      sig { returns(T::Boolean) }
-      def library?
-        # If it has a lockfile, treat it as an application. Otherwise treat it as a library.
-        dependency_files.none? { |f| f.name == PackageManager::LOCKFILE_FILENAME }
-      end
+
 
       sig { returns(T::Boolean) }
       def path_dependency?

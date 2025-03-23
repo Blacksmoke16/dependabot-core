@@ -19,11 +19,18 @@ module Dependabot
       MANIFEST_FILENAME = "shard.yml"
       LOCKFILE_FILENAME = "shard.lock"
 
+      SUPPORTED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+
+      # When a version is going to be unsupported, it will be added here
+      DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+
       sig { params(raw_version: String).void }
       def initialize(raw_version)
         super(
           name: NAME,
           version: Version.new(raw_version),
+          supported_versions: SUPPORTED_VERSIONS,
+          deprecated_versions: DEPRECATED_VERSIONS
        )
       end
 

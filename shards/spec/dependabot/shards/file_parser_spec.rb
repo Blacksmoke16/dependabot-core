@@ -363,5 +363,15 @@ RSpec.describe Dependabot::Shards::FileParser do
         expect(package_manager.version.to_s).to eq "0.19.1"
       end
     end
+
+    describe "#language" do
+      subject(:language) { ecosystem.language }
+
+      it "returns the correct language" do
+        expect(language.name).to eq "crystal"
+        expect(language.requirement).to be_nil
+        expect(language.version.to_s).to eq "1.15.1"
+      end
+    end
   end
 end

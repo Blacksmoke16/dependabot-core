@@ -138,135 +138,17 @@ RSpec.describe Dependabot::Shards::UpdateChecker do
       subject(:updated_requirements) { checker.updated_requirements }
 
       it "updates them to match new version" do
-        expect(updated_requirements.first[:requirement]).to eq("~> 0.13.0")
+        expect(updated_requirements.first[:requirement]).to eq("0.13.1")
       end
     end
   end
 
-  # it_behaves_like "a dependency that needs manifest changes to get updated"
+  it_behaves_like "a dependency that needs manifest changes to get updated"
 
-  describe "#latest_version" do
-    subject(:latest_version) { checker.latest_version }
+  context "when there's no lockfile" do
+    let(:project_name) { "no_lockfile" }
 
-    let(:project_name) { "exact_version" }
-    let(:name) { "db" }
-
-    context "with a path source" do
-      let(:project_name) { "path_source" }
-      let(:name) { "test" }
-
-      it { is_expected.to be_nil }
-    end
-
-    context "with a git source" do
-      context "when the user is ignoring the latest version" do
-        let(:ignored_versions) { [">= 0.13.0"] }
-
-        it { is_expected.to eq(Gem::Version.new("0.12.0")) }
-      end
-
-      context "when the user is ignoring all versions" do
-        let(:ignored_versions) { [">= 0"] }
-
-        it "returns latest_resolvable_version" do
-          expect(latest_version).to be_nil
-        end
-
-        context "when raise_on_ignored is enabled" do
-          let(:raise_on_ignored) { true }
-
-          it "raises an error" do
-            expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
-          end
-        end
-      end
-
-      context "when using default requirement" do
-        let(:dependency_version) { "0.10.0" }
-        let(:requirements) do
-          [{
-            requirement: nil,
-            file: "shard.yml",
-            groups: ["dependencies"],
-            source: {
-              type: "git",
-              url: "https://github.com/crystal-lang/crystal-db.git",
-              branch: nil,
-              ref: nil
-            }
-          }]
-        end
-
-        # Should use the latest tag
-        it { is_expected.to eq(Gem::Version.new("0.13.1")) }
-      end
-
-      context "when pinned to a specific commit" do
-        let(:project_name) { "commit_source" }
-
-        let(:dependency_version) { "1d0105ffeb1f983fafdda7ec2fd68916f74b4a4c" }
-        let(:requirements) do
-          [{
-            requirement: nil,
-            file: "shard.yml",
-            groups: ["dependencies"],
-            source: {
-              type: "git",
-              url: "https://github.com/crystal-lang/crystal-db.git",
-              branch: nil,
-              ref: "1d0105ffeb1f983fafdda7ec2fd68916f74b4a4c"
-            }
-          }]
-        end
-
-        # Should remain unchanged
-        it { is_expected.to eq(dependency_version) }
-      end
-
-      context "when pinned to a specific branch" do
-        let(:project_name) { "branch_source" }
-
-        let(:dependency_version) { "7fff589e026412646b33cef80f78cd1c7fd072aa" }
-        let(:requirements) do
-          [{
-            requirement: nil,
-            file: "shard.yml",
-            groups: ["dependencies"],
-            source: {
-              type: "git",
-              url: "https://github.com/crystal-lang/crystal-db.git",
-              branch: "master",
-              ref: nil
-            }
-          }]
-        end
-
-        # Should use latest commit on the branch
-        it { is_expected.to eq("3eaac85a5d4b7bee565b55dcb584e84e29fc5567") }
-      end
-
-      context "when pinned to a specific tag" do
-        let(:project_name) { "tag_source" }
-
-        let(:dependency_version) { "0.13.0" }
-        let(:requirements) do
-          [{
-            requirement: nil,
-            file: "shard.yml",
-            groups: ["dependencies"],
-            source: {
-              type: "git",
-              url: "https://github.com/crystal-lang/crystal-db.git",
-              branch: nil,
-              ref: "v0.13.0"
-            }
-          }]
-        end
-
-        # Should use commit of latest tag
-        it { is_expected.to eq(Gem::Version.new("0.13.1")) }
-      end
-    end
+    it_behaves_like "a dependency that needs manifest changes to get updated"
   end
 
   describe "#lowest_security_fix_version" do
@@ -275,23 +157,58 @@ RSpec.describe Dependabot::Shards::UpdateChecker do
     let(:project_name) { "exact_version" }
     let(:name) { "db" }
 
-    it "finds the lowest available non-vulnerable version" do
-      expect(lowest_security_fix_version).to eq(Gem::Version.new("0.10.1"))
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: name,
+          package_manager: Dependabot::Shards::PackageManager::NAME,
+          vulnerable_versions: ["<= 0.10.0"]
+        )
+      ]
     end
 
-    context "with a security vulnerability" do
+    context "when a supported newer version is available" do
+      it "updates to the least new supported version" do
+        expect(lowest_security_fix_version).to eq(Dependabot::Swift::Version.new("0.10.1"))
+      end
+    end
+
+    context "with ignored versions" do
+      let(:ignored_versions) { ["= 0.10.1"] }
+
+      it "doesn't return ignored versions" do
+        expect(lowest_security_fix_version).to eq(Dependabot::Swift::Version.new("0.11.0"))
+      end
+    end
+  end
+
+  describe "#lowest_resolvable_security_fix_version" do
+    subject(:lowest_resolvable_security_fix_version) { checker.lowest_resolvable_security_fix_version }
+
+    context "when a supported newer version is available, and resolvable" do
+      let(:project_name) { "exact_version" }
+      let(:name) { "db" }
+
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
             dependency_name: name,
-            package_manager: "shards",
+            package_manager: Dependabot::Shards::PackageManager::NAME,
             vulnerable_versions: ["<= 0.10.0"]
           )
         ]
       end
 
-      it "finds the lowest available non-vulnerable version" do
-        expect(lowest_security_fix_version).to eq(Gem::Version.new("0.10.1"))
+      it "updates to the least new supported version" do
+        expect(lowest_resolvable_security_fix_version).to eq(Dependabot::Shards::Version.new("0.10.1"))
+      end
+
+      context "with ignored versions" do
+        let(:ignored_versions) { ["= 0.10.0"] }
+
+        it "doesn't return ignored versions" do
+          expect(lowest_resolvable_security_fix_version).to eq(Dependabot::Shards::Version.new("0.10.1"))
+        end
       end
     end
   end
