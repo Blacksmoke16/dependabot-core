@@ -156,8 +156,6 @@ module Dependabot
         dependency.source_details
       end
 
-
-
       sig { returns(T::Boolean) }
       def path_dependency?
         dependency.requirements.any? { |r| r.dig(:source, :type) == "path" }

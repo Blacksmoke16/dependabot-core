@@ -1,13 +1,13 @@
 # typed: true
 # frozen_string_literal: true
 
+require "dependabot/file_updaters/base"
 require "dependabot/shared_helpers"
-require "dependabot/errors"
-require "dependabot/shards/file_updater"
+require "dependabot/logger"
 
 module Dependabot
   module Shards
-    class FileUpdater
+    class FileUpdater < Dependabot::FileUpdaters::Base
       class LockfileUpdater
         extend T::Sig
         extend T::Helpers
@@ -34,14 +34,24 @@ module Dependabot
             File.write(manifest.name, manifest.content)
 
             SharedHelpers.with_git_configured(credentials: credentials) do
-              Utils.run_shards_command(
-                "lock --update #{dependency.name}",
-                fingerprint: "shards lock --update <dependency_name>"
-              )
+              try_lockfile_update dependency.name
 
               File.read(PackageManager::LOCKFILE_FILENAME)
             end
           end
+        end
+
+        def try_lockfile_update(dependency_name)
+          Utils.run_shards_command(
+            "lock --update #{dependency_name}",
+            fingerprint: "shards lock --update <dependency_name>"
+          )
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          # This class is not only used for final lockfile updates, but for
+          # checking resolvability. So resolvability errors here are expected in
+          # certain situations and will result in `no_update_possible` outcomes.
+          # That said, since we're swallowing all errors we at least log them to ease debugging.
+          Dependabot.logger.info("Lockfile failed to be updated due to error:\n#{e.message}")
         end
 
         attr_reader :dependency

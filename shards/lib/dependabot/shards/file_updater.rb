@@ -37,6 +37,7 @@ module Dependabot
 
       private
 
+      sig { returns(Dependabot::Dependency) }
       def dependency
         # For now we will be updating a single dependency.
         # TODO: Revisit when/if implementing full unlocks

@@ -18,7 +18,8 @@ module Dependabot
       def self.update_dep_version(content, groups, name, new_version)
         key = groups.include?("runtime") ? "dependencies" : "development_dependencies"
         new_version = new_version.start_with?("~>") ? new_version : "'#{new_version}'"
-        content.gsub(/(#{key}:\s*\n(?:\s{2,}[^\n]*\n)*\s*#{name}:\s*\n(?:\s{4,}[^\n]*\n)*\s*version:\s*).*/, "\\1#{new_version}")
+        content.gsub(/(#{key}:\s*\n(?:\s{2,}[^\n]*\n)*\s*#{name}:\s*\n(?:\s{4,}[^\n]*\n)*\s*version:\s*).*/,
+                     "\\1#{new_version}")
       end
 
       sig { params(cmd: String, fingerprint: T.nilable(String)).returns(String) }

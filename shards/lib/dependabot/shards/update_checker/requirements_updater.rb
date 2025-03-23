@@ -28,7 +28,9 @@ module Dependabot
                                 current_requirement_string
                               elsif current_requirement_string.start_with?("~>")
                                 "~> #{target_version}"
-                              elsif (operator_index = OPERATORS.find_index { |o| current_requirement_string.start_with?(o) })
+                              elsif (operator_index = OPERATORS.find_index { |o|
+                                current_requirement_string.start_with?(o)
+                              })
                                 "#{OPERATORS[operator_index]} #{target_version}"
                               else
                                 target_version
