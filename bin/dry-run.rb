@@ -132,8 +132,6 @@ require "dependabot/python"
 require "dependabot/shards"
 ||||||| 00de73b26
 require "dependabot/python"
-=======
->>>>>>> origin/main
 require "dependabot/pub"
 require "dependabot/python"
 require "dependabot/swift"
