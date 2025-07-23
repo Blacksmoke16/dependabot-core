@@ -15,6 +15,13 @@ function Get-SdkVersionsToInstall([string] $repoRoot, [string[]] $updateDirector
         }
 
         $sdkVersion = $globalJson.sdk.version
+        if ($null -ne $sdkVersion) {
+            $versionParts = $sdkVersion.Split(".")
+            if (($versionParts.Length -eq 3) -and ($versionParts[2].Length -eq 1) -and ($null -eq ($versionParts[2] -as [int]))) {
+                # non-integer single character third part, e.g. 9.0.x => report 9.0 for channel install
+                $sdkVersion = "$($versionParts[0]).$($versionParts[1])"
+            }
+        }
         if (($null -ne $sdkVersion) -and (-not ($sdkVersion -in $installedSdks)) -and (-not ($sdkVersion -in $installedSdks))) {
             $installedSdks += $sdkVersion
             $sdksToInstall += $sdkVersion
@@ -87,7 +94,7 @@ function Install-Sdks([string]$jobFilePath, [string]$repoContentsPath, [string]$
     $sdksToInstall = Get-SdkVersionsToInstall -repoRoot $rootDir -updateDirectories $candidateDirectories -installedSdks $installedSdks
     foreach ($sdkVersion in $sdksToInstall) {
         $versionParts = $sdkVersion.Split(".")
-        if ($versionParts.Length -eq 3 -and $versionParts[2] -eq "0") {
+        if (($versionParts.Length -eq 2) -or ($versionParts.Length -eq 3 -and $versionParts[2] -eq "0")) {
             $channelVersion = "$($versionParts[0]).$($versionParts[1])"
             Write-Host "Installing SDK from channel $channelVersion"
             & $dotnetInstallScriptPath --channel $channelVersion --install-dir $dotnetInstallDir
@@ -158,4 +165,42 @@ function Repair-FileCasingForName([string]$fileName) {
 
 function Repair-FileCasing() {
     Repair-FileCasingForName -fileName "NuGet.Config"
+}
+
+function Get-NuGetConfigContents([PSObject[]]$creds) {
+    $baseSourceLines = @("    <add key=`"nuget.org`" value=`"https://api.nuget.org/v3/index.json`" />")
+    $customSourceLines = @()
+    $i = 1
+    foreach ($cred in $creds) {
+        if ($cred.type -ne "nuget_feed") {
+            continue
+        }
+
+        if ("replaces-base" -in $cred.PSObject.Properties.Name -And $cred.'replaces-base') {
+            $baseSourceLines = @()
+        }
+
+        $sourceName = "nuget_source_$i"
+        $i++
+        $url = $cred.url
+        $customSourceLines += "    <add key=`"$sourceName`" value=`"$url`" />"
+    }
+
+    $lines = @()
+    $lines += '<?xml version="1.0" encoding="utf-8"?>'
+    $lines += '<configuration>'
+    $lines += '  <packageSources>'
+    $lines = $($lines; $baseSourceLines; $customSourceLines)
+    $lines += '  </packageSources>'
+    $lines += '</configuration>'
+    return ,$lines
+}
+
+function Set-NuGetConfig() {
+    $job = Get-Job -jobFilePath $env:DEPENDABOT_JOB_PATH
+    $lines = Get-NuGetConfigContents -creds $job.'credentials-metadata'
+    $nugetConfigPath = "$HOME/.nuget/NuGet/NuGet.Config"
+    $lines | Set-Content -Path $nugetConfigPath -Encoding utf8
+    Write-Host "User-level NuGet.Config set to ..."
+    Get-Content -Path $nugetConfigPath
 }

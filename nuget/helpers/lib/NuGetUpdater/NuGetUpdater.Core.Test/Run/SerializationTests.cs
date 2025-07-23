@@ -8,7 +8,7 @@ using Xunit;
 
 namespace NuGetUpdater.Core.Test.Run;
 
-public class SerializationTests
+public class SerializationTests : TestBase
 {
     [Fact]
     public void DeserializeJob()
@@ -50,7 +50,8 @@ public class SerializationTests
                 "credentials-metadata": [
                   {
                     "host": "github.com",
-                    "type": "git_source"
+                    "type": "git_source",
+                    "replaces-base": false
                   }
                 ],
                 "max-updater-run-time": 0
@@ -116,7 +117,8 @@ public class SerializationTests
                 "credentials": [
                   {
                     "name": "some-cred",
-                    "token": "abc123"
+                    "token": "abc123",
+                    "replaces-base": false
                   }
                 ],
                 "existing-pull-requests": [
@@ -155,8 +157,7 @@ public class SerializationTests
                   "directory": "some-dir"
                 },
                 "experiments": {
-                  "nuget_legacy_dependency_solver": true,
-                  "nuget_use_direct_discovery": true,
+                  "nuget_generate_simple_pr_body": true,
                   "unexpected_bool": true,
                   "unexpected_number": 42,
                   "unexpected_null": null,
@@ -171,8 +172,7 @@ public class SerializationTests
             }
             """);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
-        Assert.True(experimentsManager.UseLegacyDependencySolver);
-        Assert.True(experimentsManager.UseDirectDiscovery);
+        Assert.True(experimentsManager.GenerateSimplePrBody);
     }
 
     [Fact]
@@ -198,8 +198,7 @@ public class SerializationTests
             }
             """);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
-        Assert.False(experimentsManager.UseLegacyDependencySolver);
-        Assert.False(experimentsManager.UseDirectDiscovery);
+        Assert.False(experimentsManager.GenerateSimplePrBody);
     }
 
     [Fact]
@@ -223,8 +222,7 @@ public class SerializationTests
             }
             """);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
-        Assert.False(experimentsManager.UseLegacyDependencySolver);
-        Assert.False(experimentsManager.UseDirectDiscovery);
+        Assert.False(experimentsManager.GenerateSimplePrBody);
     }
 
     [Fact]
@@ -246,27 +244,19 @@ public class SerializationTests
                   "directory": "some-dir"
                 },
                 "experiments": {
-                  "nuget-legacy-dependency-solver": true,
-                  "nuget-use-direct-discovery": true
+                  "nuget-generate-simple-pr-body": true
                 }
               }
             }
             """);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
-        Assert.True(experimentsManager.UseLegacyDependencySolver);
-        Assert.True(experimentsManager.UseDirectDiscovery);
+        Assert.True(experimentsManager.GenerateSimplePrBody);
     }
 
     [Theory]
-    [MemberData(nameof(DeserializeErrorTypesData))]
+    [MemberData(nameof(SerializeErrorTypesData))]
     public void SerializeError(JobErrorBase error, string expectedSerialization)
     {
-        if (error is UnknownError unknown)
-        {
-            // special case the exception's call stack to make it testable
-            unknown.Details["error-backtrace"] = "TEST-BACKTRACE";
-        }
-
         var actual = HttpApiHandler.Serialize(error);
         Assert.Equal(expectedSerialization, actual);
     }
@@ -277,7 +267,7 @@ public class SerializationTests
         var untestedTypes = typeof(JobErrorBase).Assembly.GetTypes()
             .Where(t => t.IsSubclassOf(typeof(JobErrorBase)))
             .ToHashSet();
-        foreach (object?[] data in DeserializeErrorTypesData())
+        foreach (object?[] data in SerializeErrorTypesData())
         {
             var testedErrorType = data[0]!.GetType();
             untestedTypes.Remove(testedErrorType);
@@ -320,13 +310,13 @@ public class SerializationTests
 
         Assert.Equal("Package.1", jobWrapper.Job.IgnoreConditions[0].DependencyName);
         Assert.Equal("some-file", jobWrapper.Job.IgnoreConditions[0].Source);
-        Assert.Equal("version-update:semver-major", jobWrapper.Job.IgnoreConditions[0].UpdateTypes.Single());
+        Assert.Equal(ConditionUpdateType.SemVerMajor, jobWrapper.Job.IgnoreConditions[0].UpdateTypes!.Single());
         Assert.Null(jobWrapper.Job.IgnoreConditions[0].UpdatedAt);
         Assert.Equal("> 1.2.3", jobWrapper.Job.IgnoreConditions[0].VersionRequirement?.ToString());
 
         Assert.Equal("Package.2", jobWrapper.Job.IgnoreConditions[1].DependencyName);
         Assert.Null(jobWrapper.Job.IgnoreConditions[1].Source);
-        Assert.Empty(jobWrapper.Job.IgnoreConditions[1].UpdateTypes);
+        Assert.Null(jobWrapper.Job.IgnoreConditions[1].UpdateTypes);
         Assert.Equal(new DateTime(2024, 12, 5, 15, 47, 12), jobWrapper.Job.IgnoreConditions[1].UpdatedAt);
         Assert.Null(jobWrapper.Job.IgnoreConditions[1].VersionRequirement);
     }
@@ -560,9 +550,14 @@ public class SerializationTests
         Assert.Equal(expected, actual);
     }
 
-    [Fact]
-    public void SerializeCreatePullRequest()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SerializeCreatePullRequest(bool withDependencyGroupName)
     {
+        var dependencyGroupName = withDependencyGroupName
+            ? "test-group"
+            : null;
         var create = new CreatePullRequest()
         {
             Dependencies = [new() { Name = "dep", Version = "ver2", PreviousVersion = "ver1", Requirements = [new() { Requirement = "ver2", File = "project.csproj" }], PreviousRequirements = [new() { Requirement = "ver1", File = "project.csproj" }] }],
@@ -570,18 +565,28 @@ public class SerializationTests
             BaseCommitSha = "TEST-COMMIT-SHA",
             CommitMessage = "commit message",
             PrTitle = "pr title",
-            PrBody = "pr body"
+            PrBody = "pr body",
+            DependencyGroup = dependencyGroupName,
         };
         var actual = HttpApiHandler.Serialize(create);
-        var expected = """
-            {"data":{"dependencies":[{"name":"dep","version":"ver2","requirements":[{"requirement":"ver2","file":"project.csproj","groups":[],"source":null}],"previous-version":"ver1","previous-requirements":[{"requirement":"ver1","file":"project.csproj","groups":[],"source":null}]}],"updated-dependency-files":[{"name":"project.csproj","content":"updated content","directory":"/","type":"file","support_file":false,"content_encoding":"utf-8","deleted":false,"operation":"update","mode":null}],"base-commit-sha":"TEST-COMMIT-SHA","commit-message":"commit message","pr-title":"pr title","pr-body":"pr body"}}
+
+        var expectedDependencyGroupValue = withDependencyGroupName
+            ? """{"name":"test-group"}"""
+            : "null";
+        var expected = $$$"""
+            {"data":{"dependencies":[{"name":"dep","version":"ver2","requirements":[{"requirement":"ver2","file":"project.csproj","groups":[],"source":null}],"previous-version":"ver1","previous-requirements":[{"requirement":"ver1","file":"project.csproj","groups":[],"source":null}]}],"updated-dependency-files":[{"name":"project.csproj","content":"updated content","directory":"/","type":"file","support_file":false,"content_encoding":"utf-8","deleted":false,"operation":"update","mode":null}],"base-commit-sha":"TEST-COMMIT-SHA","commit-message":"commit message","pr-title":"pr title","pr-body":"pr body","dependency-group":{{{expectedDependencyGroupValue}}}}}
             """;
         Assert.Equal(expected, actual);
     }
 
-    [Fact]
-    public void SerializeUpdatePullRequest()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SerializeUpdatePullRequest(bool withDependencyGroupName)
     {
+        var dependencyGroupName = withDependencyGroupName
+            ? "test-group"
+            : null;
         var update = new UpdatePullRequest()
         {
             BaseCommitSha = "TEST-COMMIT-SHA",
@@ -590,16 +595,55 @@ public class SerializationTests
             PrTitle = "pr title",
             PrBody = "pr body",
             CommitMessage = "commit message",
-            DependencyGroup = null,
+            DependencyGroup = dependencyGroupName,
         };
         var actual = HttpApiHandler.Serialize(update);
-        var expected = """
-            {"data":{"base-commit-sha":"TEST-COMMIT-SHA","dependency-names":["dep"],"updated-dependency-files":[{"name":"project.csproj","content":"updated content","directory":"/","type":"file","support_file":false,"content_encoding":"utf-8","deleted":false,"operation":"update","mode":null}],"pr-title":"pr title","pr-body":"pr body","commit-message":"commit message","dependency-group":null}}
+
+        var expectedDependencyGroupValue = withDependencyGroupName
+            ? """{"name":"test-group"}"""
+            : "null";
+        var expected = $$$"""
+            {"data":{"base-commit-sha":"TEST-COMMIT-SHA","dependency-names":["dep"],"updated-dependency-files":[{"name":"project.csproj","content":"updated content","directory":"/","type":"file","support_file":false,"content_encoding":"utf-8","deleted":false,"operation":"update","mode":null}],"pr-title":"pr title","pr-body":"pr body","commit-message":"commit message","dependency-group":{{{expectedDependencyGroupValue}}}}}
             """;
         Assert.Equal(expected, actual);
     }
 
-    public static IEnumerable<object?[]> DeserializeErrorTypesData()
+    [Fact]
+    public void SerializeRealUnknownErrorWithInnerException()
+    {
+        // arrange
+        using var tempDir = new TemporaryDirectory();
+        var action = new Action(() =>
+        {
+            try
+            {
+                throw new NotImplementedException("inner message");
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("outer message", ex);
+            }
+        });
+        var ex = Assert.Throws<InvalidOperationException>(action);
+
+        // act
+        var error = JobErrorBase.ErrorFromException(ex, "TEST-JOB-ID", tempDir.DirectoryPath);
+
+        // assert
+        // real exception message should look like this:
+        // System.InvalidOperationException: outer message
+        //  ---> System.NotImplementedException: inner message
+        //    at Namespace.Class.Method() in file.cs:line 123
+        //    --- End of inner exception stack trace ---
+        //    at Namespace.Class.Method() in file.cs:line 456
+        var errorMessage = Assert.IsType<string>(error.Details["error-message"]);
+        var lines = errorMessage.Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
+        Assert.Equal("System.InvalidOperationException: outer message", lines[0]);
+        Assert.Equal(" ---> System.NotImplementedException: inner message", lines[1]);
+        Assert.Contains("   --- End of inner exception stack trace ---", lines[2..]);
+    }
+
+    public static IEnumerable<object?[]> SerializeErrorTypesData()
     {
         yield return
         [
@@ -651,9 +695,57 @@ public class SerializationTests
 
         yield return
         [
+            new PrivateSourceBadResponse(["url1", "url2"]),
+            """
+            {"data":{"error-type":"private_source_bad_response","error-details":{"source":"(url1|url2)"}}}
+            """
+        ];
+
+        yield return
+        [
+            new PrivateSourceTimedOut("url"),
+            """
+            {"data":{"error-type":"private_source_timed_out","error-details":{"source":"url"}}}
+            """
+        ];
+
+        yield return
+        [
             new PullRequestExistsForLatestVersion("dep", "ver"),
             """
             {"data":{"error-type":"pull_request_exists_for_latest_version","error-details":{"dependency-name":"dep","dependency-version":"ver"}}}
+            """
+        ];
+
+        yield return
+        [
+            new PullRequestExistsForSecurityUpdate([new("dep", "ver", DependencyType.PackageReference)]),
+            """
+            {"data":{"error-type":"pull_request_exists_for_security_update","error-details":{"updated-dependencies":[{"dependency-name":"dep","dependency-version":"ver","dependency-removed":false}]}}}
+            """
+        ];
+
+        yield return
+        [
+            new SecurityUpdateDependencyNotFound(),
+            """
+            {"data":{"error-type":"security_update_dependency_not_found","error-details":{}}}
+            """
+        ];
+
+        yield return
+        [
+            new SecurityUpdateIgnored("dep"),
+            """
+            {"data":{"error-type":"all_versions_ignored","error-details":{"dependency-name":"dep"}}}
+            """
+        ];
+
+        yield return
+        [
+            new SecurityUpdateNotFound("dep", "ver"),
+            """
+            {"data":{"error-type":"security_update_not_found","error-details":{"dependency-name":"dep","dependency-version":"ver"}}}
             """
         ];
 
@@ -667,9 +759,17 @@ public class SerializationTests
 
         yield return
         [
+            new SecurityUpdateNotPossible("dep", "ver1", "ver2", []),
+            """
+            {"data":{"error-type":"security_update_not_possible","error-details":{"dependency-name":"dep","latest-resolvable-version":"ver1","lowest-non-vulnerable-version":"ver2","conflicting-dependencies":[]}}}
+            """
+        ];
+
+        yield return
+        [
             new UnknownError(new Exception("some message"), "JOB-ID"),
             """
-            {"data":{"error-type":"unknown_error","error-details":{"error-class":"Exception","error-message":"some message","error-backtrace":"TEST-BACKTRACE","package-manager":"nuget","job-id":"JOB-ID"}}}
+            {"data":{"error-type":"unknown_error","error-details":{"error-class":"Exception","error-message":"System.Exception: some message","error-backtrace":"","package-manager":"nuget","job-id":"JOB-ID"}}}
             """
         ];
 

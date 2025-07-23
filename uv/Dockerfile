@@ -1,10 +1,11 @@
 # This list must match the versions specified in
-# python/lib/dependabot/uv/language_version_manager.rb: PRE_INSTALLED_PYTHON_VERSIONS
-ARG PY_3_13=3.13.2
-ARG PY_3_12=3.12.9
-ARG PY_3_11=3.11.11
-ARG PY_3_10=3.10.16
-ARG PY_3_9=3.9.21
+# uv/lib/dependabot/uv/language.rb: PRE_INSTALLED_PYTHON_VERSIONS_RAW
+# Python versions are pinned to the release of each minor/patch version.
+ARG PY_3_13=3.13.3
+ARG PY_3_12=3.12.10
+ARG PY_3_11=3.11.12
+ARG PY_3_10=3.10.17
+ARG PY_3_9=3.9.22
 ARG PYENV_VERSION=v2.5.2
 
 FROM ghcr.io/dependabot/dependabot-updater-core AS python-core
@@ -175,6 +176,9 @@ COPY --from=rust /usr/local/cargo $CARGO_HOME
 
 # Configure cargo to use Git CLI so the Git shim works
 RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo/config.toml
+
+# Install uv by copying from the official image
+COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /usr/local/bin/
 
 COPY --chown=dependabot:dependabot cargo $DEPENDABOT_HOME/cargo
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common

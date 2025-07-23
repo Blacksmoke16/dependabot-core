@@ -22,7 +22,7 @@
 - changed-files:
   - any-glob-to-any-file: docker_compose/**
 
-"L: dotnet-sdk":
+"L: dotnet:dotnet-sdk":
 - changed-files:
   - any-glob-to-any-file: dotnet_sdk/**
 
@@ -76,6 +76,10 @@
 - changed-files:
   - any-glob-to-any-file: uv/**
 
+"L: rust:rust-toolchain":
+- changed-files:
+  - any-glob-to-any-file: rust_toolchain/**
+
 "L: terraform":
 - changed-files:
   - any-glob-to-any-file: terraform/**
@@ -91,3 +95,7 @@
 "L: crystal":
 - changed-files:
   - any-glob-to-any-file: shards/**
+
+"L: cpp:vcpkg":
+- changed-files:
+  - any-glob-to-any-file: vcpkg/**

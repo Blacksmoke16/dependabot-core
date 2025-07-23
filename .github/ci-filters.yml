@@ -5,6 +5,10 @@ shared: &shared
   - 'updater/Gemfil*'
   - 'omnibus/**'
   - '.github/workflows/ci.yml'
+dry_run:
+  - *shared
+  - 'bin/dry-run.rb'
+  - 'bin/spec/**'
 bun:
   - *shared
   - 'bun/**'
@@ -66,6 +70,9 @@ pub:
 python:
   - *shared
   - 'python/**'
+rust_toolchain:
+  - *shared
+  - 'rust_toolchain/**'
 swift:
   - *shared
   - 'swift/**'
@@ -81,3 +88,6 @@ helm:
 shards:
   - *shared
   - 'shards/**'
+vcpkg:
+  - *shared
+  - 'vcpkg/**'

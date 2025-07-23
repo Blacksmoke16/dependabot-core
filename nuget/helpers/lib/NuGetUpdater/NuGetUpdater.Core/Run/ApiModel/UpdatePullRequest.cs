@@ -1,5 +1,8 @@
 using System.Collections.Immutable;
+using System.Text;
 using System.Text.Json.Serialization;
+
+using static NuGetUpdater.Core.Run.ApiModel.CreatePullRequest;
 
 namespace NuGetUpdater.Core.Run.ApiModel;
 
@@ -23,6 +26,25 @@ public sealed record UpdatePullRequest : MessageBase
     [JsonPropertyName("commit-message")]
     public required string CommitMessage { get; init; }
 
+    /// <summary>
+    /// This is serialized as either `null` or `{"name": "group-name"}`.
+    /// </summary>
     [JsonPropertyName("dependency-group")]
+    [JsonConverter(typeof(DependencyGroupConverter))]
     public required string? DependencyGroup { get; init; }
+
+    public override string GetReport()
+    {
+        var dependencyNames = DependencyNames
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var report = new StringBuilder();
+        report.AppendLine(nameof(UpdatePullRequest));
+        foreach (var d in dependencyNames)
+        {
+            report.AppendLine($"- {d}");
+        }
+
+        return report.ToString().Trim();
+    }
 }

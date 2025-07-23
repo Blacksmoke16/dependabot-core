@@ -53,7 +53,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 CanUpdate = true,
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies = [
-                    new("Some.Package", "1.1.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect : true),
                 ],
             }
         );
@@ -104,70 +104,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 CanUpdate = true,
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies = [
-                    new("Some.Package", "4.9.2", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
-                    new("Some.Transitive.Dependency", "4.9.2", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
-                ],
-            }
-        );
-    }
-
-    [Fact]
-    public async Task DeterminesMultiPropertyVersion()
-    {
-        var evaluationResult = new EvaluationResult(EvaluationResultType.Success, "$(SomePackageVersion)", "4.0.1", "SomePackageVersion", ErrorMessage: null);
-        await TestAnalyzeAsync(
-            packages:
-            [
-                MockNuGetPackage.CreateSimplePackage("Some.Package", "4.0.1", "net8.0", [(null, [("Some.Transitive.Dependency", "[4.0.1]")])]), // initially this
-                MockNuGetPackage.CreateSimplePackage("Some.Package", "4.9.2", "net8.0", [(null, [("Some.Transitive.Dependency", "[4.9.2]")])]), // should update to this
-                MockNuGetPackage.CreateSimplePackage("Some.Package", "4.9.3", "net8.0", [(null, [("Some.Transitive.Dependency", "[4.9.3]")])]), // will not update this far
-                MockNuGetPackage.CreateSimplePackage("Some.Transitive.Dependency", "4.0.1", "net8.0"),
-                MockNuGetPackage.CreateSimplePackage("Some.Transitive.Dependency", "4.9.2", "net8.0"),
-                MockNuGetPackage.CreateSimplePackage("Some.Transitive.Dependency", "4.9.3", "net8.0"),
-            ],
-            discovery: new()
-            {
-                Path = "/",
-                Projects = [
-                    new()
-                    {
-                        FilePath = "./project.csproj",
-                        TargetFrameworks = ["net8.0"],
-                        Dependencies = [
-                            new("Some.Transitive.Dependency", "4.0.1", DependencyType.PackageReference, EvaluationResult: evaluationResult, TargetFrameworks: ["net8.0"]),
-                        ],
-                        ReferencedProjectPaths = [],
-                        ImportedFiles = [],
-                        AdditionalFiles = [],
-                    },
-                    new()
-                    {
-                        FilePath = "./project2.csproj",
-                        TargetFrameworks = ["net8.0"],
-                        Dependencies = [
-                            new("Some.Package", "4.0.1", DependencyType.PackageReference, EvaluationResult: evaluationResult, TargetFrameworks: ["net8.0"]),
-                        ],
-                        ReferencedProjectPaths = [],
-                        ImportedFiles = [],
-                        AdditionalFiles = [],
-                    },
-                ],
-            },
-            dependencyInfo: new()
-            {
-                Name = "Some.Transitive.Dependency",
-                Version = "4.0.1",
-                IgnoredVersions = [Requirement.Parse("> 4.9.2")],
-                IsVulnerable = false,
-                Vulnerabilities = [],
-            },
-            expectedResult: new()
-            {
-                UpdatedVersion = "4.9.2",
-                CanUpdate = true,
-                VersionComesFromMultiDependencyProperty = true,
-                UpdatedDependencies = [
-                    new("Some.Package", "4.9.2", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                    new("Some.Package", "4.9.2", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
                     new("Some.Transitive.Dependency", "4.9.2", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
                 ],
             }
@@ -425,7 +362,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 UpdatedVersion = "1.1.0",
                 CanUpdate = true,
                 UpdatedDependencies = [
-                    new("Some.Package", "1.1.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
                 ],
             }
         );
@@ -472,7 +409,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 CanUpdate = true,
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies = [
-                    new("Some.Package", "1.1.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks :["net8.0"], IsDirect : true),
                 ],
             }
         );
@@ -527,7 +464,60 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 CanUpdate = true,
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies = [
-                    new("Some.Package", "1.1.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks :["net8.0"], IsDirect : true),
+                ],
+            }
+        );
+    }
+
+    [Fact]
+    public async Task WindowsSpecificProjectAndWindowsSpecificDependency()
+    {
+        await TestAnalyzeAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net6.0-windows7.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.1", "net6.0-windows7.0"),
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net9.0-windows"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [
+                    new()
+                    {
+                        DependencyName = "Some.Package",
+                        PackageManager = "nuget",
+                        VulnerableVersions = [],
+                        SafeVersions = []
+                    }
+                ],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "1.0.1",
+                CanUpdate = true,
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies = [
+                    new("Some.Package", "1.0.1", DependencyType.PackageReference, TargetFrameworks: ["net9.0-windows"], IsDirect: true),
                 ],
             }
         );
@@ -648,7 +638,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
 
                     // nothing else is found
                     return (404, Encoding.UTF8.GetBytes("{}"));
-            };
+            }
         }
         using var http1 = TestHttpServer.CreateTestServer(TestHttpHandler1);
         using var http2 = TestHttpServer.CreateTestServer(TestHttpHandler2);
@@ -699,7 +689,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies =
                 [
-                    new("Some.Package", "1.2.3", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                    new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks :["net8.0"], IsDirect : true),
                 ],
             }
         );
@@ -820,7 +810,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
 
                     // nothing else is found
                     return (404, Encoding.UTF8.GetBytes("{}"));
-            };
+            }
         }
         using var http1 = TestHttpServer.CreateTestServer(TestHttpHandler1);
         using var http2 = TestHttpServer.CreateTestServer(TestHttpHandler2);
@@ -871,7 +861,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies =
                 [
-                    new("Some.Package", "1.2.3", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                    new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks :["net8.0"], IsDirect : true),
                 ],
             }
         );
@@ -1010,7 +1000,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
 
                     // nothing else is found
                     return (404, Encoding.UTF8.GetBytes("{}"));
-            };
+            }
         }
         using var http = TestHttpServer.CreateTestServer(TestHttpHandler);
         await TestAnalyzeAsync(
@@ -1059,7 +1049,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies =
                 [
-                    new("Some.Package", "1.1.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
                 ],
             }
         );
@@ -1075,7 +1065,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
             UpdatedVersion = "",
             UpdatedDependencies = [],
         }, new TestLogger());
-        var discoveryContents = await File.ReadAllTextAsync(Path.Combine(temporaryDirectory.DirectoryPath, "Some.Dependency.json"));
+        var discoveryContents = await File.ReadAllTextAsync(Path.Combine(temporaryDirectory.DirectoryPath, "Some.Dependency.json"), TestContext.Current.CancellationToken);
 
         // raw result file should look like this:
         // {

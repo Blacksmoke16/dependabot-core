@@ -56,9 +56,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   let(:registry_listing_url) { "#{registry_base}/#{escaped_dependency_name}" }
   let(:registry_base) { "https://registry.npmjs.org" }
 
-  # Variable to control the npm fallback version feature flag
-  let(:npm_fallback_version_above_v6_enabled) { false }
-
   # Variable to control the enabling feature flag for the corepack fix
   let(:enable_corepack_for_npm_and_yarn) { true }
 
@@ -69,8 +66,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       .to_return(status: 200)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:npm_fallback_version_above_v6).and_return(npm_fallback_version_above_v6_enabled)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
   end
@@ -354,7 +349,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       before do
         allow_any_instance_of(described_class::VersionResolver)
           .to receive(:latest_resolvable_version)
-          .and_return(Gem::Version.new("1.7.0"))
+          .and_return(Dependabot::NpmAndYarn::Version.new("1.7.0"))
       end
 
       it { is_expected.to be_truthy }
@@ -366,17 +361,18 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
     let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
 
-    it "delegates to LatestVersionFinder" do
-      expect(described_class::LatestVersionFinder).to receive(:new).with(
+    it "delegates to PackageLatestVersionFinder" do
+      expect(described_class::PackageLatestVersionFinder).to receive(:new).with(
         dependency: dependency,
         credentials: credentials,
         dependency_files: dependency_files,
         ignored_versions: ignored_versions,
         raise_on_ignored: false,
-        security_advisories: security_advisories
+        security_advisories: security_advisories,
+        cooldown_options: nil
       ).and_call_original
 
-      expect(checker.latest_version).to eq(Gem::Version.new("1.7.0"))
+      expect(checker.latest_version).to eq(Dependabot::NpmAndYarn::Version.new("1.7.0"))
     end
 
     it "only hits the registry once" do
@@ -542,7 +538,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         let(:current_version) { "2.0.2" }
 
         it "fetches the latest version tag" do
-          expect(checker.latest_version).to eq(Gem::Version.new("4.0.0"))
+          expect(checker.latest_version).to eq(Dependabot::NpmAndYarn::Version.new("4.0.0"))
         end
 
         context "when there are no tags" do
@@ -561,7 +557,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
     it "finds the lowest available non-vulnerable version" do
       expect(checker.lowest_security_fix_version)
-        .to eq(Gem::Version.new("1.0.1"))
+        .to eq(Dependabot::NpmAndYarn::Version.new("1.0.1"))
     end
 
     context "with a security vulnerability" do
@@ -578,7 +574,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       let(:target_version) { "1.2.1" }
 
       it "finds the lowest available non-vulnerable version" do
-        expect(lowest_security_fix).to eq(Gem::Version.new("1.2.1"))
+        expect(lowest_security_fix).to eq(Dependabot::NpmAndYarn::Version.new("1.2.1"))
       end
     end
 
@@ -606,7 +602,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
 
-    it { is_expected.to eq(Gem::Version.new("1.7.0")) }
+    it { is_expected.to eq(Dependabot::NpmAndYarn::Version.new("1.7.0")) }
 
     context "when dealing with a sub-dependency" do
       let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }
@@ -632,15 +628,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             credentials: credentials,
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
-            latest_allowable_version: Gem::Version.new("1.0.1"),
+            latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
             repo_contents_path: nil
           ).and_return(dummy_version_resolver)
         expect(dummy_version_resolver)
           .to receive(:latest_resolvable_version)
-          .and_return(Gem::Version.new("1.0.0"))
+          .and_return(Dependabot::NpmAndYarn::Version.new("1.0.0"))
 
         expect(checker.latest_resolvable_version)
-          .to eq(Gem::Version.new("1.0.0"))
+          .to eq(Dependabot::NpmAndYarn::Version.new("1.0.0"))
       end
     end
   end
@@ -648,7 +644,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   describe "#preferred_resolvable_version" do
     subject { checker.preferred_resolvable_version }
 
-    it { is_expected.to eq(Gem::Version.new("1.7.0")) }
+    it { is_expected.to eq(Dependabot::NpmAndYarn::Version.new("1.7.0")) }
 
     context "with a security vulnerability" do
       let(:dependency_version) { "1.1.0" }
@@ -663,7 +659,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
       let(:target_version) { "1.2.1" }
 
-      it { is_expected.to eq(Gem::Version.new("1.2.1")) }
+      it { is_expected.to eq(Dependabot::NpmAndYarn::Version.new("1.2.1")) }
 
       context "when dealing with a sub-dependency" do
         let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }
@@ -697,15 +693,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               credentials: credentials,
               dependency_files: dependency_files,
               ignored_versions: ignored_versions,
-              latest_allowable_version: Gem::Version.new("1.0.1"),
+              latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
               repo_contents_path: nil
             ).and_return(dummy_version_resolver)
           expect(dummy_version_resolver)
             .to receive(:latest_resolvable_version)
-            .and_return(Gem::Version.new("1.0.1"))
+            .and_return(Dependabot::NpmAndYarn::Version.new("1.0.1"))
 
           expect(checker.preferred_resolvable_version)
-            .to eq(Gem::Version.new("1.0.1"))
+            .to eq(Dependabot::NpmAndYarn::Version.new("1.0.1"))
         end
       end
     end
@@ -773,8 +769,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         let(:target_version) { "2.0.2" }
 
         it "returns the lowest security fix version" do
-          allow(checker).to receive(:lowest_security_fix_version).and_return(Gem::Version.new(target_version))
-          expect(lowest_resolvable_security_fix_version).to eq(Gem::Version.new(target_version))
+          allow(checker).to receive(:lowest_security_fix_version).and_return(
+            Dependabot::NpmAndYarn::Version.new(target_version)
+          )
+          expect(lowest_resolvable_security_fix_version).to eq(Dependabot::NpmAndYarn::Version.new(target_version))
         end
       end
 
@@ -793,8 +791,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           it "returns the latest resolvable transitive security fix version with no unlock" do
             allow(checker)
               .to receive(:latest_resolvable_transitive_security_fix_version_with_no_unlock)
-              .and_return(Gem::Version.new(target_version))
-            expect(lowest_resolvable_security_fix_version).to eq(Gem::Version.new(target_version))
+              .and_return(Dependabot::NpmAndYarn::Version.new(target_version))
+            expect(lowest_resolvable_security_fix_version).to eq(Dependabot::NpmAndYarn::Version.new(target_version))
           end
         end
       end
@@ -824,18 +822,19 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
       let(:req_string) { "^1.0.0" }
 
-      it "delegates to LatestVersionFinder" do
-        expect(described_class::LatestVersionFinder).to receive(:new).with(
+      it "delegates to PackageLatestVersionFinder" do
+        expect(described_class::PackageLatestVersionFinder).to receive(:new).with(
           dependency: dependency,
           credentials: credentials,
           dependency_files: dependency_files,
           ignored_versions: ignored_versions,
           raise_on_ignored: false,
-          security_advisories: security_advisories
+          security_advisories: security_advisories,
+          cooldown_options: nil
         ).and_call_original
 
         expect(checker.latest_resolvable_version_with_no_unlock)
-          .to eq(Gem::Version.new("1.7.0"))
+          .to eq(Dependabot::NpmAndYarn::Version.new("1.7.0"))
       end
     end
 
@@ -862,15 +861,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             credentials: credentials,
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
-            latest_allowable_version: Gem::Version.new("1.0.1"),
+            latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
             repo_contents_path: nil
           ).and_return(dummy_version_resolver)
         expect(dummy_version_resolver)
           .to receive(:latest_resolvable_version)
-          .and_return(Gem::Version.new("1.0.0"))
+          .and_return(Dependabot::NpmAndYarn::Version.new("1.0.0"))
 
         expect(checker.latest_resolvable_version_with_no_unlock)
-          .to eq(Gem::Version.new("1.0.0"))
+          .to eq(Dependabot::NpmAndYarn::Version.new("1.0.0"))
       end
     end
 
@@ -943,7 +942,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
           it "return a numeric version" do
             expect(checker.latest_resolvable_version_with_no_unlock)
-              .to eq(Gem::Version.new("2.0.2"))
+              .to eq(Dependabot::NpmAndYarn::Version.new("2.0.2"))
           end
         end
       end
@@ -956,11 +955,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
 
     let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
-    let(:updated_version) { Gem::Version.new("1.7.0") }
+    let(:updated_version) { Dependabot::NpmAndYarn::Version.new("1.7.0") }
 
     it "delegates to VersionResolver" do
-      dummy_version_resolver =
-        instance_double(described_class::VersionResolver)
+      dummy_version_resolver = instance_double(described_class::VersionResolver)
 
       expect(described_class::VersionResolver)
         .to receive(:new)
@@ -968,18 +966,20 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           dependency: dependency,
           credentials: credentials,
           dependency_files: dependency_files,
-          latest_version_finder: described_class::LatestVersionFinder,
+          latest_version_finder: described_class::PackageLatestVersionFinder,
           latest_allowable_version: updated_version,
           repo_contents_path: nil,
-          dependency_group: nil
+          dependency_group: nil,
+          raise_on_ignored: false,
+          update_cooldown: nil
         ).and_return(dummy_version_resolver)
       expect(dummy_version_resolver)
         .to receive(:latest_resolvable_previous_version)
         .with(updated_version)
-        .and_return(Gem::Version.new("1.6.0"))
+        .and_return(Dependabot::NpmAndYarn::Version.new("1.6.0"))
 
       expect(latest_resolvable_previous_version)
-        .to eq(Gem::Version.new("1.6.0"))
+        .to eq(Dependabot::NpmAndYarn::Version.new("1.6.0"))
     end
   end
 
@@ -1368,8 +1368,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
 
     it "delegates to the VersionResolver" do
-      dummy_version_resolver =
-        instance_double(described_class::VersionResolver)
+      dummy_version_resolver = instance_double(described_class::VersionResolver)
 
       expect(described_class::VersionResolver)
         .to receive(:new)
@@ -1377,10 +1376,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           dependency: dependency,
           credentials: credentials,
           dependency_files: dependency_files,
-          latest_version_finder: described_class::LatestVersionFinder,
-          latest_allowable_version: Gem::Version.new("1.7.0"),
+          latest_version_finder: described_class::PackageLatestVersionFinder,
+          latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.7.0"),
           repo_contents_path: nil,
-          dependency_group: nil
+          dependency_group: nil,
+          raise_on_ignored: false,
+          update_cooldown: nil
         ).and_return(dummy_version_resolver)
       expect(dummy_version_resolver)
         .to receive(:dependency_updates_from_full_unlock)

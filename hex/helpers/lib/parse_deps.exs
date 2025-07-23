@@ -1,3 +1,7 @@
+# Log to stderr instead of stdout
+:logger.remove_handler(:default)
+:logger.add_handler(:to_stderr, :logger_std_h, %{config: %{type: :standard_error}})
+
 defmodule Parser do
   @allowed_scms [Hex.SCM, Mix.SCM.Git, Mix.SCM.Path]
 
@@ -109,7 +113,7 @@ defmodule Parser do
     %{
       type: "git",
       url: repo_url,
-      branch: opts[:branch] || "master",
+      branch: opts[:branch],
       ref: ref
     }
   end

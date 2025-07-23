@@ -39,7 +39,8 @@ module Dependabot
                    :mark_job_as_processed,
                    :record_ecosystem_versions,
                    :increment_metric,
-                   :record_ecosystem_meta
+                   :record_ecosystem_meta,
+                   :record_cooldown_meta
 
     sig { void }
     def wait_for_calls_to_finish
@@ -222,7 +223,7 @@ module Dependabot
     def job_errors_summary
       if Dependabot::Experiments.enabled?(:enable_enhanced_error_details_for_updater)
         job_errors = errors.filter_map do |error_type, error_details, dependency|
-          [error_type, error_details] if dependency.nil?
+          [error_type, JSON.pretty_generate(error_details)] if dependency.nil?
         end
         return if job_errors.none?
 
@@ -257,7 +258,7 @@ module Dependabot
     def dependency_error_summary
       if Dependabot::Experiments.enabled?(:enable_enhanced_error_details_for_updater)
         dependency_errors = errors.filter_map do |error_type, error_details, dependency|
-          [dependency.name, error_type, error_details] unless dependency.nil?
+          [dependency.name, error_type, JSON.pretty_generate(error_details)] unless dependency.nil?
         end
         return if dependency_errors.none?
 

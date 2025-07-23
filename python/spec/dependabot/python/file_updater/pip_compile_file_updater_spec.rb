@@ -502,7 +502,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       it "raises an error indicating the dependencies are not resolvable", :slow do
         expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
           expect(err.message).to include(
-            "There are incompatible versions in the resolved dependencies:\n  pyyaml==6.0.1"
+            "not supported between instances of 'InstallationCandidate'"
           )
         end
       end
@@ -531,10 +531,10 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       let(:dependency_version) { "5.2.7" }
       let(:dependency_previous_version) { "5.2.6" }
 
-      it "adds pycurl as dependency" do
+      it "adds boto3 as dependency" do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).to include("--resolver=backtracking")
-        expect(updated_files.first.content).to include("pycurl")
+        expect(updated_files.first.content).to include("boto3")
       end
     end
 
@@ -545,10 +545,10 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       let(:dependency_version) { "5.2.7" }
       let(:dependency_previous_version) { "5.2.6" }
 
-      it "do not include pycurl" do
+      it "do not include boto3" do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).to include("--resolver=legacy")
-        expect(updated_files.first.content).not_to include("pycurl")
+        expect(updated_files.first.content).not_to include("boto3")
       end
     end
   end

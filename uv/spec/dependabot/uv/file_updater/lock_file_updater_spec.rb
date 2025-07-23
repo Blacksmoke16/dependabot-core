@@ -120,10 +120,6 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         allow(Dependabot::Uv::FileUpdater::PyprojectPreparer).to receive(:new)
           .and_return(pyproject_preparer)
 
-        allow(pyproject_preparer).to receive(:freeze_top_level_dependencies_except)
-          .with(dependencies)
-          .and_return("frozen content")
-
         allow(pyproject_preparer).to receive_messages(
           update_python_requirement: "python requirement updated content",
           sanitize: "sanitized content"
@@ -141,31 +137,73 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
 
     context "with TOML parsing" do
-      let(:lockfile_content) { fixture("uv_locks", "simple.lock") }
+      let(:lockfile_content) { fixture("uv_locks", "minimal.lock") }
+      let(:updated_lockfile_content) { fixture("uv_locks", "minimal_updated.lock") }
 
+      # Simulate a change to the python version in the updated lockfile
       let(:modified_lockfile_content) do
-        content = lockfile_content.dup
-        content.sub!(
-          'requires-python = ">=3.9"',
-          'requires-python = ">=3.8"'
-        )
-        content.sub!(
-          'name = "requests"\nversion = "2.32.3"',
-          'name = "requests"\nversion = "2.23.0"'
-        )
-        content
+        content = updated_lockfile_content.dup
+        content.sub('requires-python = ">=3.9"', 'requires-python = ">=3.8"')
       end
 
       before do
         allow(updater).to receive(:updated_lockfile_content_for).and_return(modified_lockfile_content)
       end
 
-      it "preserves the original requires-python value" do
+      it "preserves the original requires-python value and updates the package section" do
         updated_lock = updated_files.find { |f| f.name == "uv.lock" }
         expect(updated_lock.content).to include('requires-python = ">=3.9"')
-        expect(updated_lock.content).to include('version = "2.23.0"')
-        expect(updated_lock.content).not_to include('version = "2.32.3"')
+        expect(updated_lock.content).to include('name = "requests"')
+        expect(updated_lock.content).to include('version = "2.32.3"')
+        expect(updated_lock.content).to include("requests-2.32.3.tar.gz")
+        expect(updated_lock.content).to include("requests-2.32.3-py3-none-any.whl")
+
+        expect(updated_lock.content).not_to include('requires-python = ">=3.8"')
+        expect(updated_lock.content).not_to include('version = "2.31.0"')
+        expect(updated_lock.content).not_to include("requests-2.31.0.tar.gz")
+        expect(updated_lock.content).not_to include("requests-2.31.0-py3-none-any.whl")
       end
+    end
+  end
+
+  describe "with a requirements.txt or requirements.in file only" do
+    let(:dependencies) do
+      [
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.23.0",
+          requirements: [{
+            file: "requirements.txt",
+            requirement: "==2.23.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "requirements.txt",
+            requirement: ">=2.31.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "2.32.3",
+          package_manager: "uv"
+        )
+      ]
+    end
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: fixture("requirements/uv_pip_compile_requests.txt")
+        ),
+        Dependabot::DependencyFile.new(
+          name: "requirements.in",
+          content: fixture("pip_compile_files/requests.in")
+        )
+      ]
+    end
+
+    it "ignores the requirements file" do
+      expect(updater.updated_dependency_files).to be_empty
     end
   end
 
@@ -211,6 +249,85 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       match = content.match(regex)
       expect(match).to be_a(MatchData)
       expect(match[:declaration]).to eq("redis~=4.5.4")
+    end
+  end
+
+  describe "#lock_index_options" do
+    subject(:lock_index_options) { updater.send(:lock_index_options) }
+
+    let(:credentials) do
+      [
+        Dependabot::Credential.new({
+          "type" => "python_index",
+          "index-url" => "https://example.com/simple",
+          "token" => "token",
+          "replaces-base" => false
+        }),
+        Dependabot::Credential.new({
+          "type" => "python_index",
+          "index-url" => "https://another.com/simple",
+          "token" => "another_token",
+          "replaces-base" => true
+        })
+      ]
+    end
+
+    it "matches authed urls to correct option index flags" do
+      expect(lock_index_options).to include("--default-index https://another_token@another.com/simple")
+      expect(lock_index_options).to include("--index https://token@example.com/simple")
+    end
+  end
+
+  describe "#lock_options_fingerprint" do
+    subject(:lock_options_fingerprint) { updater.send(:lock_options_fingerprint, options) }
+
+    let(:options) do
+      "--default-index https://another.com/simple --index https://example.com/simple"
+    end
+
+    it "replaces sensitive information in the fingerprint with placeholders" do
+      expect(lock_options_fingerprint).to eq("--default-index <default_index> --index <index>")
+    end
+  end
+
+  describe "#run_update_command" do
+    subject(:run_update_command) { updater.send(:run_update_command) }
+
+    let(:credentials) do
+      [
+        Dependabot::Credential.new({
+          "type" => "python_index",
+          "index-url" => "https://example.com/simple",
+          "token" => "token",
+          "replaces-base" => false
+        }),
+        Dependabot::Credential.new({
+          "type" => "python_index",
+          "index-url" => "https://another.com/simple",
+          "token" => "another_token",
+          "replaces-base" => true
+        })
+      ]
+    end
+
+    before do
+      allow(updater).to receive(:run_command)
+    end
+
+    it "includes the expected options in the command and fingerprint" do
+      expected_command = "pyenv exec uv lock --upgrade-package requests " \
+                         "--index https://token@example.com/simple " \
+                         "--default-index https://another_token@another.com/simple"
+      expected_fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> " \
+                             "--index <index> " \
+                             "--default-index <default_index>"
+
+      run_update_command
+
+      expect(updater).to have_received(:run_command).with(
+        expected_command,
+        fingerprint: expected_fingerprint
+      )
     end
   end
 end

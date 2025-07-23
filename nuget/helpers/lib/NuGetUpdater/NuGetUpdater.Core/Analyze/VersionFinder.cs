@@ -1,5 +1,7 @@
 using System.Collections.Immutable;
 
+using Newtonsoft.Json;
+
 using NuGet.Common;
 using NuGet.Configuration;
 using NuGet.Frameworks;
@@ -7,6 +9,8 @@ using NuGet.Packaging.Core;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
+
+using NuGetUpdater.Core.Run.ApiModel;
 
 namespace NuGetUpdater.Core.Analyze;
 
@@ -98,6 +102,11 @@ internal static class VersionFinder
                 // if anything goes wrong here, the package source obviously doesn't contain the requested package
                 continue;
             }
+            catch (JsonReaderException ex)
+            {
+                // unable to parse server response
+                throw new BadResponseException(ex.Message, source.Source);
+            }
 
             var feedVersions = (await feed.GetVersions(
                 packageId,
@@ -148,12 +157,39 @@ internal static class VersionFinder
             var isIgnoredVersion = dependencyInfo.IgnoredVersions.Any(i => i.IsSatisfiedBy(version));
             var isVulnerableVersion = dependencyInfo.Vulnerabilities.Any(v => v.IsVulnerable(version));
             var isSafeVersion = !safeVersions.Any() || safeVersions.Any(s => s.IsSatisfiedBy(version));
+
+            var isIgnoredByType = false;
+            if (currentVersion is not null)
+            {
+                var isMajorBump = version.Major > currentVersion.Major;
+                var isMinorBump = version.Major == currentVersion.Major && version.Minor > currentVersion.Minor;
+                var isPatchBump = version.Major == currentVersion.Major && version.Minor == currentVersion.Minor && version.Patch > currentVersion.Patch;
+                foreach (var ignoreType in dependencyInfo.IgnoredUpdateTypes)
+                {
+                    switch (ignoreType)
+                    {
+                        case ConditionUpdateType.SemVerPatch:
+                            isIgnoredByType = isIgnoredByType || isPatchBump || isMinorBump || isMajorBump;
+                            break;
+                        case ConditionUpdateType.SemVerMinor:
+                            isIgnoredByType = isIgnoredByType || isMinorBump || isMajorBump;
+                            break;
+                        case ConditionUpdateType.SemVerMajor:
+                            isIgnoredByType = isIgnoredByType || isMajorBump;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
             return versionGreaterThanCurrent
                 && rangeSatisfies
                 && prereleaseTypeMatches
                 && !isIgnoredVersion
                 && !isVulnerableVersion
-                && isSafeVersion;
+                && isSafeVersion
+                && !isIgnoredByType;
         };
     }
 

@@ -1,4 +1,8 @@
+using System.Collections.Immutable;
+
 using Microsoft.Language.Xml;
+
+using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core.Updater
 {
@@ -7,17 +11,35 @@ namespace NuGetUpdater.Core.Updater
         private readonly List<string?> _capturedConditions = new List<string?>();
         private readonly XmlFilePreAndPostProcessor _processor;
 
+        // These files only ship with a full Visual Studio install
         private readonly HashSet<string> ImportedFilesToIgnore = new(StringComparer.OrdinalIgnoreCase)
         {
             "Microsoft.TextTemplating.targets",
             "Microsoft.WebApplication.targets"
         };
 
+        // PackageReference elements with `GeneratePathProperty="true"` will cause a special property to be created.
+        private readonly ImmutableArray<string> PathSegmentsToIgnore =
+        [
+            "$(Pkg"
+        ];
+
         public SpecialImportsConditionPatcher(string projectFilePath)
         {
+            var hasBOM = false;
             _processor = new XmlFilePreAndPostProcessor(
-                getContent: () => File.ReadAllText(projectFilePath),
-                setContent: s => File.WriteAllText(projectFilePath, s),
+                getContent: () =>
+                {
+                    var content = File.ReadAllText(projectFilePath);
+                    var rawContent = File.ReadAllBytes(projectFilePath);
+                    hasBOM = rawContent.HasBOM();
+                    return content;
+                },
+                setContent: content =>
+                {
+                    var rawContent = content.SetBOM(hasBOM);
+                    File.WriteAllBytes(projectFilePath, rawContent);
+                },
                 nodeFinder: doc => doc.Descendants()
                     .Where(e => e.Name == "Import")
                     .Where(e =>
@@ -25,8 +47,11 @@ namespace NuGetUpdater.Core.Updater
                         var projectPath = e.GetAttributeValue("Project");
                         if (projectPath is not null)
                         {
-                            var projectFileName = Path.GetFileName(projectPath.NormalizePathToUnix());
-                            return ImportedFilesToIgnore.Contains(projectFileName);
+                            var normalizedProjectPath = projectPath.NormalizePathToUnix();
+                            var projectFileName = Path.GetFileName(normalizedProjectPath);
+                            var hasForbiddenFile = ImportedFilesToIgnore.Contains(projectFileName);
+                            var hasForbiddenPathSegment = PathSegmentsToIgnore.Any(p => normalizedProjectPath.Contains(p, StringComparison.OrdinalIgnoreCase));
+                            return hasForbiddenFile || hasForbiddenPathSegment;
                         }
 
                         return false;

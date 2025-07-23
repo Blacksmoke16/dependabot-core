@@ -12,34 +12,39 @@ require "yaml"
 
 # ./dependabot-core.gemspec is purposefully excluded from this list
 # because it's an empty gem as a placeholder to prevent namesquatting.
+
+# disabling the following gemspecs until upstream fixes "https://github.com/rubygems/rubygems/issues/8836"
+# rust_toolchain/dependabot-rust_toolchain.gemspec
+# vcpkg/dependabot-vcpkg.gemspec
+
 GEMSPECS = %w(
   common/dependabot-common.gemspec
-  go_modules/dependabot-go_modules.gemspec
-  terraform/dependabot-terraform.gemspec
+  bun/dependabot-bun.gemspec
+  bundler/dependabot-bundler.gemspec
+  cargo/dependabot-cargo.gemspec
+  composer/dependabot-composer.gemspec
+  devcontainers/dependabot-devcontainers.gemspec
+  docker_compose/dependabot-docker_compose.gemspec
   docker/dependabot-docker.gemspec
+  dotnet_sdk/dependabot-dotnet_sdk.gemspec
+  elm/dependabot-elm.gemspec
   git_submodules/dependabot-git_submodules.gemspec
   github_actions/dependabot-github_actions.gemspec
-  nuget/dependabot-nuget.gemspec
+  go_modules/dependabot-go_modules.gemspec
   gradle/dependabot-gradle.gemspec
-  maven/dependabot-maven.gemspec
-  bundler/dependabot-bundler.gemspec
-  elm/dependabot-elm.gemspec
-  cargo/dependabot-cargo.gemspec
-  npm_and_yarn/dependabot-npm_and_yarn.gemspec
-  composer/dependabot-composer.gemspec
+  helm/dependabot-helm.gemspec
   hex/dependabot-hex.gemspec
-  python/dependabot-python.gemspec
-  pub/dependabot-pub.gemspec
+  maven/dependabot-maven.gemspec
+  npm_and_yarn/dependabot-npm_and_yarn.gemspec
+  nuget/dependabot-nuget.gemspec
   omnibus/dependabot-omnibus.gemspec
+  pub/dependabot-pub.gemspec
+  python/dependabot-python.gemspec
+  shards/dependabot-shards.gemspec
   silent/dependabot-silent.gemspec
   swift/dependabot-swift.gemspec
-  shards/dependabot-shards.gemspec
-  devcontainers/dependabot-devcontainers.gemspec
-  dotnet_sdk/dependabot-dotnet_sdk.gemspec
-  bun/dependabot-bun.gemspec
-  docker_compose/dependabot-docker_compose.gemspec
+  terraform/dependabot-terraform.gemspec
   uv/dependabot-uv.gemspec
-  helm/dependabot-helm.gemspec
 ).freeze
 
 def run_command(command)
@@ -69,7 +74,9 @@ namespace :gems do
 
     GEMSPECS.each do |gemspec_path|
       gem_name = File.basename(gemspec_path).sub(/\.gemspec$/, "")
-      gem_path = "pkg/#{gem_name}-#{Dependabot::VERSION}.gem"
+      gem_name_and_version = "#{gem_name}-#{Dependabot::VERSION}"
+      gem_path = "pkg/#{gem_name_and_version}.gem"
+      gem_attestation_path = "pkg/#{gem_name_and_version}.sigstore.json"
 
       attempts = 0
       loop do
@@ -79,13 +86,20 @@ namespace :gems do
         else
           puts "> Releasing #{gem_path}"
           attempts += 1
-          sleep(2)
           begin
-            sh "gem push #{gem_path}"
+            if ENV["GITHUB_ACTIONS"] == "true"
+              sh "gem exec sigstore-cli:0.2.1 sign #{gem_path} --bundle #{gem_attestation_path}"
+              sh "gem push #{gem_path} --attestation #{gem_attestation_path}"
+            else
+              puts "- Skipping sigstore signing (not in GitHub Actions environment, so no OIDC token available)"
+              sh "gem push #{gem_path}"
+            end
             break
           rescue StandardError => e
             puts "! `gem push` failed with error: #{e}"
             raise if attempts >= 3
+
+            sleep(2)
           end
         end
       end
@@ -93,7 +107,7 @@ namespace :gems do
   end
 
   task :clean do
-    FileUtils.rm(Dir["pkg/*.gem"])
+    FileUtils.rm(Dir["pkg/*.gem", "pkg/*.sigstore.json"])
   end
 end
 

@@ -79,7 +79,7 @@ module Dependabot
 
           Dependabot::Package::PackageDetails.new(
             dependency: dependency,
-            releases: package_releases.reverse.uniq(&:version)
+            releases: package_releases.reverse
           )
         end
 
@@ -90,13 +90,11 @@ module Dependabot
             .returns(T.nilable(T::Array[Dependabot::Package::PackageRelease]))
         end
         def fetch_from_registry(index_url)
-          if Dependabot::Experiments.enabled?(:enable_cooldown_for_uv)
-            metadata = fetch_from_json_registry(index_url)
+          metadata = fetch_from_json_registry(index_url)
 
-            return metadata if metadata&.any?
+          return metadata if metadata&.any?
 
-            Dependabot.logger.warn("No valid versions found via JSON API. Falling back to HTML.")
-          end
+          Dependabot.logger.warn("No valid versions found via JSON API. Falling back to HTML.")
           fetch_from_html_registry(index_url)
         rescue StandardError => e
           Dependabot.logger.warn("Unexpected error in JSON fetch: #{e.message}. Falling back to HTML.")
@@ -472,7 +470,7 @@ module Dependabot
         def validate_index(index_url)
           return false unless index_url
 
-          return true if index_url.match?(URI::DEFAULT_PARSER.regexp[:ABS_URI])
+          return true if index_url.match?(URI::RFC2396_PARSER.regexp[:ABS_URI])
 
           raise Dependabot::DependencyFileNotResolvable,
                 "Invalid URL: #{sanitized_url(index_url)}"

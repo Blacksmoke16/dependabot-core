@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Text;
 
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Test.Update;
@@ -297,8 +298,7 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
                     FilePath = "library.csproj",
                     Dependencies =
                     [
-                        new("Some.Dependency", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net7.0"], IsDirect: true),
-                        new("Some.Dependency", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                        new("Some.Dependency", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true),
                     ],
                     ImportedFiles = [],
                     Properties =
@@ -524,6 +524,111 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
         );
     }
 
+    [Fact]
+    public async Task TransitiveDependenciesWithoutAssembliesAreReported()
+    {
+        await TestDiscoverAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.2.3", "net9.0", [(null, [("Transitive.Dependency", "4.5.6")])]),
+                new MockNuGetPackage(
+                    "Transitive.Dependency",
+                    "4.5.6",
+                    Files: [
+                        ("build/Transitive.Dependency.targets", Encoding.UTF8.GetBytes("<Project />"))
+                    ],
+                    DependencyGroups: [(null, [("Super.Transitive.Dependency", "7.8.9")])]
+                ),
+                MockNuGetPackage.CreateSimplePackage("Super.Transitive.Dependency", "7.8.9", "net9.0"),
+            ],
+            startingDirectory: "src",
+            projectPath: "src/library.csproj",
+            files:
+            [
+                ("src/library.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="1.2.3" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedProjects:
+            [
+                new()
+                {
+                    FilePath = "library.csproj",
+                    Dependencies =
+                    [
+                        new("Some.Dependency", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net9.0"], IsDirect: true),
+                        new("Transitive.Dependency", "4.5.6", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsTransitive: true),
+                        new("Super.Transitive.Dependency", "7.8.9", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsTransitive: true),
+                    ],
+                    ImportedFiles = [],
+                    Properties =
+                    [
+                        new("TargetFramework", "net9.0", "src/library.csproj"),
+                    ],
+                    TargetFrameworks = ["net9.0"],
+                    ReferencedProjectPaths = [],
+                    AdditionalFiles = [],
+                },
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task ExistingPackageIncompatibilityShouldNotPreventRestore()
+    {
+        // Package.A tries to pull in a transitive dependency of Transitive.Package/2.0.0 but that package is explicitly pinned at 1.0.0
+        // Normally this would cause a restore failure which means discovery would also fail
+        // This test ensures we can still run discovery
+        await TestDiscoverAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Package.A", "1.0.0", "net8.0", [(null, [("Transitive.Package", "2.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Transitive.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", "net8.0"),
+            ],
+            startingDirectory: "src",
+            projectPath: "src/library.csproj",
+            files: [
+                ("src/library.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package.A" Version="1.0.0" />
+                        <PackageReference Include="Transitive.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedProjects: [
+                new()
+                {
+                    FilePath = "library.csproj",
+                    Dependencies =
+                    [
+                        new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                        new("Transitive.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
+                    ],
+                    ImportedFiles = [],
+                    Properties =
+                    [
+                        new("TargetFramework", "net8.0", "src/library.csproj"),
+                    ],
+                    TargetFrameworks = ["net8.0"],
+                    ReferencedProjectPaths = [],
+                    AdditionalFiles = [],
+                }
+            ]
+        );
+    }
+
     private static async Task TestDiscoverAsync(string startingDirectory, string projectPath, TestFile[] files, ImmutableArray<ExpectedSdkProjectDiscoveryResult> expectedProjects, MockNuGetPackage[]? packages = null)
     {
         using var testDirectory = await TemporaryDirectory.CreateWithContentsAsync(files);
@@ -532,8 +637,8 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
 
         var logger = new TestLogger();
         var fullProjectPath = Path.Combine(testDirectory.DirectoryPath, projectPath);
-        var experimentsManager = new ExperimentsManager() { UseDirectDiscovery = true }; // the following method is direct discovery; this just makes the call to Validate... happy
-        var projectDiscovery = await SdkProjectDiscovery.DiscoverWithBinLogAsync(testDirectory.DirectoryPath, Path.GetDirectoryName(fullProjectPath)!, fullProjectPath, experimentsManager, logger);
+        var experimentsManager = new ExperimentsManager();
+        var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(testDirectory.DirectoryPath, Path.GetDirectoryName(fullProjectPath)!, fullProjectPath, experimentsManager, logger);
         ValidateProjectResults(expectedProjects, projectDiscovery, experimentsManager);
     }
 }

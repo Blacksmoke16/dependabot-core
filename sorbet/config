@@ -15,6 +15,7 @@
 --ignore=composer/spec/
 --ignore=devcontainers/spec/
 --ignore=docker/spec/
+--ignore=docker_compose/spec/
 --ignore=dotnet_sdk/spec/
 --ignore=elm/spec/
 --ignore=git_submodules/spec/
@@ -28,9 +29,11 @@
 --ignore=nuget/spec/
 --ignore=pub/spec/
 --ignore=python/spec/
+--ignore=rust_toolchain/spec/
 --ignore=swift/spec/
 --ignore=terraform/spec/
 --ignore=updater/spec/
 --ignore=uv/spec/
 --ignore=shards/spec/
+--ignore=vcpkg/spec/
 --ignore=.git
