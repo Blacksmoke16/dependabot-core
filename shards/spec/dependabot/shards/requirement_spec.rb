@@ -71,5 +71,14 @@ RSpec.describe Dependabot::Shards::Requirement do
 
       it { is_expected.to eq(described_class.new(">= 0")) }
     end
+
+    context "with nil requirement" do
+      let(:requirement_string) { nil }
+
+      it "handles nil by converting to string" do
+        expect { requirement }.not_to raise_error
+        expect(requirement).to eq(described_class.new(">= 0"))
+      end
+    end
   end
 end

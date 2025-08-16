@@ -30,7 +30,7 @@ module Dependabot
       def initialize(*requirements)
         requirements =
           requirements.flatten
-                      .flat_map { |req_string| req_string.split(AND_SEPARATOR) }
+                      .flat_map { |req_string| req_string.to_s.split(AND_SEPARATOR) }
                       .map do |req|
                         case req
                         when "*" then ">= 0"
