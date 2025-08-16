@@ -45,7 +45,6 @@ jobs:
           - { path: shards, name: shards, ecosystem: shards }
           - { path: vcpkg, name: vcpkg, ecosystem: vcpkg }
 
-
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2

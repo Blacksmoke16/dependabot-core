@@ -32,7 +32,6 @@ gem "dependabot-uv", path: "uv"
 gem "dependabot-vcpkg", path: "vcpkg"
 
 # Sorbet
-gem "solargraph", group: :development
 gem "sorbet", "0.5.11952", group: :development
 gem "tapioca", "0.16.11", require: false, group: :development
 

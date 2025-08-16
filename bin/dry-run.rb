@@ -130,7 +130,6 @@ require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
 require "dependabot/python"
 require "dependabot/shards"
-||||||| 00de73b26
 require "dependabot/python"
 require "dependabot/pub"
 require "dependabot/python"
