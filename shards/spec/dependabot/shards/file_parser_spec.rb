@@ -370,7 +370,7 @@ RSpec.describe Dependabot::Shards::FileParser do
       it "returns the correct language" do
         expect(language.name).to eq "crystal"
         expect(language.requirement).to be_nil
-        expect(language.version.to_s).to eq "1.15.1"
+        expect(language.version.to_s).to eq "1.17.0"
       end
     end
   end
