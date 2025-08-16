@@ -165,8 +165,8 @@ PATH
 PATH
   remote: ../shards
   specs:
-    dependabot-shards (0.322.1)
-      dependabot-common (= 0.322.1)
+    dependabot-shards (0.326.1)
+      dependabot-common (= 0.326.1)
 
 PATH
   remote: ../silent
@@ -197,12 +197,6 @@ PATH
   specs:
     dependabot-vcpkg (0.326.1)
       dependabot-common (= 0.326.1)
-
-PATH
-  remote: ../shards
-  specs:
-    dependabot-shards (0.301.1)
-      dependabot-common (= 0.301.1)
 
 GEM
   remote: https://rubygems.org/
@@ -581,8 +575,6 @@ DEPENDENCIES
   dependabot-uv!
   dependabot-vcpkg!
   flamegraph (~> 0.9)
-  dependabot-shards!
-  flamegraph (~> 0.9.5)
   gpgme (~> 2.0)
   http (~> 5.1)
   octokit (~> 7.2)
@@ -660,6 +652,7 @@ CHECKSUMS
   dependabot-pub (0.326.1)
   dependabot-python (0.326.1)
   dependabot-rust_toolchain (0.326.1)
+  dependabot-shards (0.326.1)
   dependabot-silent (0.326.1)
   dependabot-swift (0.326.1)
   dependabot-terraform (0.326.1)

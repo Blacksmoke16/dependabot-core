@@ -165,14 +165,8 @@ PATH
 PATH
   remote: shards
   specs:
-    dependabot-shards (0.301.1)
-      dependabot-common (= 0.301.1)
-
-PATH
-  remote: shards
-  specs:
-    dependabot-shards (0.322.1)
-      dependabot-common (= 0.322.1)
+    dependabot-shards (0.326.1)
+      dependabot-common (= 0.326.1)
 
 PATH
   remote: silent
@@ -225,7 +219,6 @@ GEM
       aws-sigv4 (~> 1.1)
     aws-sigv4 (1.8.0)
       aws-eventstream (~> 1, >= 1.0.2)
-    backport (1.2.0)
     base64 (0.2.0)
     benchmark (0.4.0)
     bigdecimal (3.1.8)
@@ -273,7 +266,6 @@ GEM
     irb (1.12.0)
       rdoc
       reline (>= 0.4.2)
-    jaro_winkler (1.6.0)
     jmespath (1.6.2)
     json (2.11.3)
     language_server-protocol (3.17.0.3)
@@ -413,7 +405,6 @@ GEM
     terminal-table (3.0.2)
       unicode-display_width (>= 1.1.1, < 3)
     thor (1.3.2)
-    tilt (2.6.0)
     toml-rb (4.0.0)
       citrus (~> 3.0, > 3.0)
       racc (~> 1.7)
@@ -428,8 +419,6 @@ GEM
       hashdiff (>= 0.4.0, < 2.0.0)
     webrick (1.9.1)
     yard (0.9.37)
-    yard-solargraph (0.1.0)
-      yard (~> 0.9)
     yard-sorbet (0.9.0)
       sorbet-runtime
       yard
@@ -507,35 +496,36 @@ CHECKSUMS
   csv (3.3.0) sha256=0bbd1defdc31134abefed027a639b3723c2753862150f4c3ee61cab71b20d67d
   date (3.4.1) sha256=bf268e14ef7158009bfeaec40b5fa3c7271906e88b196d958a89d4b408abe64f
   debug (1.9.2) sha256=48e026c0852c7a10c60263e2e527968308958e266231e36d64e3efcabec7e7fc
-  dependabot-bun (0.322.1)
-  dependabot-bundler (0.322.1)
-  dependabot-cargo (0.322.1)
-  dependabot-common (0.322.1)
-  dependabot-composer (0.322.1)
-  dependabot-devcontainers (0.322.1)
-  dependabot-docker (0.322.1)
-  dependabot-docker_compose (0.322.1)
-  dependabot-dotnet_sdk (0.322.1)
-  dependabot-elm (0.322.1)
-  dependabot-git_submodules (0.322.1)
-  dependabot-github_actions (0.322.1)
-  dependabot-go_modules (0.322.1)
-  dependabot-gradle (0.322.1)
-  dependabot-helm (0.322.1)
-  dependabot-hex (0.322.1)
-  dependabot-maven (0.322.1)
-  dependabot-npm_and_yarn (0.322.1)
-  dependabot-nuget (0.322.1)
-  dependabot-pub (0.322.1)
-  dependabot-python (0.322.1)
-  dependabot-rust_toolchain (0.322.1)
-  dependabot-shards (0.322.1)
-  dependabot-silent (0.322.1)
-  dependabot-swift (0.322.1)
-  dependabot-terraform (0.322.1)
-  dependabot-uv (0.322.1)
-  dependabot-vcpkg (0.322.1)
-  diff-lcs (1.5.0) sha256=49b934001c8c6aedb37ba19daec5c634da27b318a7a3c654ae979d6ba1929b67
+  dependabot-bun (0.326.1)
+  dependabot-bundler (0.326.1)
+  dependabot-cargo (0.326.1)
+  dependabot-common (0.326.1)
+  dependabot-composer (0.326.1)
+  dependabot-conda (0.326.1)
+  dependabot-devcontainers (0.326.1)
+  dependabot-docker (0.326.1)
+  dependabot-docker_compose (0.326.1)
+  dependabot-dotnet_sdk (0.326.1)
+  dependabot-elm (0.326.1)
+  dependabot-git_submodules (0.326.1)
+  dependabot-github_actions (0.326.1)
+  dependabot-go_modules (0.326.1)
+  dependabot-gradle (0.326.1)
+  dependabot-helm (0.326.1)
+  dependabot-hex (0.326.1)
+  dependabot-maven (0.326.1)
+  dependabot-npm_and_yarn (0.326.1)
+  dependabot-nuget (0.326.1)
+  dependabot-pub (0.326.1)
+  dependabot-python (0.326.1)
+  dependabot-rust_toolchain (0.326.1)
+  dependabot-shards (0.326.1)
+  dependabot-silent (0.326.1)
+  dependabot-swift (0.326.1)
+  dependabot-terraform (0.326.1)
+  dependabot-uv (0.326.1)
+  dependabot-vcpkg (0.326.1)
+  diff-lcs (1.6.2) sha256=9ae0d2cba7d4df3075fe8cd8602a8604993efc0dfa934cff568969efb1909962
   docile (1.4.0) sha256=5f1734bde23721245c20c3d723e76c104208e1aa01277a69901ce770f0ebb8d3
   docker_registry2 (1.18.2) sha256=2ace909110fbca29d69dd1cdec99f555024aa6f6577798638139c8e8e556910f
   domain_name (0.6.20231109) sha256=5127a1521ecca79d54accefc393f6d19db8600c6224416004414f7eaa28aecbe
