@@ -113,7 +113,7 @@ module Dependabot
 
       def unlocked_requirements
         old_requirements.map do |req|
-          req.merge(requirement: ">= #{dependency.version}")
+          req.merge(requirement: dependency.version ? ">= #{dependency.version}" : "*")
         end
       end
 

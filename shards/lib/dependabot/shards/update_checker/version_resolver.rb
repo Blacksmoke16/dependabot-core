@@ -39,7 +39,7 @@ module Dependabot
             directory: manifest.directory
           )
 
-          YAML.safe_load(updated_lockfile.content)&.dig("shards", dependency.name, "version")
+          YAML.safe_load(updated_lockfile_content)&.dig("shards", dependency.name, "version")
         end
 
         attr_reader :dependency

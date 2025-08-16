@@ -232,14 +232,14 @@ module Dependabot
       def production_dependency?(name)
         # Check if this dependency is listed in the runtime dependencies section
         runtime_deps = parsed_shard_yaml.dig("dependencies")&.keys || []
-        
+
         # If it's directly listed as a runtime dependency, it's production
         return true if runtime_deps.include?(name)
-        
+
         # If it's directly listed as a development dependency, it's not production
         dev_deps = parsed_shard_yaml.dig("development_dependencies")&.keys || []
         return false if dev_deps.include?(name)
-        
+
         # For transitive dependencies, check if any of their parent dependencies are production
         # This is a simplified approach - a more sophisticated version would recursively
         # trace the dependency tree, but for now we'll default to production
