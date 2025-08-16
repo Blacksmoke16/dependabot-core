@@ -360,6 +360,7 @@ valid_package_managers = %w(
   pub
   python
   rust_toolchain
+  shards
   swift
   terraform
   uv

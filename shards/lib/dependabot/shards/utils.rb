@@ -17,7 +17,17 @@ module Dependabot
       end
       def self.update_dep_version(content, groups, name, new_version)
         key = groups.include?("runtime") ? "dependencies" : "development_dependencies"
-        new_version = new_version.start_with?("~>") ? new_version : "'#{new_version}'"
+        # Add quotes for versions with operators (required for valid YAML)
+        # Keep simple numeric versions unquoted (Crystal convention)
+        new_version = if new_version.start_with?(">", "<", "=", "!")
+                        "'#{new_version}'"
+                      elsif new_version.start_with?("~>")
+                        new_version
+                      elsif new_version.match?(/^[\d.]+$/)
+                        new_version
+                      else
+                        "'#{new_version}'"
+                      end
         content.gsub(/(#{key}:\s*\n(?:\s{2,}[^\n]*\n)*\s*#{name}:\s*\n(?:\s{4,}[^\n]*\n)*\s*version:\s*).*/,
                      "\\1#{new_version}")
       end

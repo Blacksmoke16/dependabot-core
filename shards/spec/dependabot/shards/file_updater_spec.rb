@@ -78,7 +78,7 @@ RSpec.describe Dependabot::Shards::FileUpdater do
             source: {
               type: "git",
               url: "https://github.com/crystal-lang/crystal-db.git",
-              ref: "0.10.0",
+              ref: "0.13.1",
               branch: nil
             }
           }],

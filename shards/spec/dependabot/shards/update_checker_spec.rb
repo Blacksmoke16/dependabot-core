@@ -3,8 +3,7 @@
 
 require "spec_helper"
 
-require "dependabot/swift/file_parser"
-require "dependabot/shards/update_checker"
+require "dependabot/shards"
 require "dependabot/dependency_file"
 require "dependabot/dependency"
 require "dependabot/requirements_update_strategy"
@@ -169,7 +168,7 @@ RSpec.describe Dependabot::Shards::UpdateChecker do
 
     context "when a supported newer version is available" do
       it "updates to the least new supported version" do
-        expect(lowest_security_fix_version).to eq(Dependabot::Swift::Version.new("0.10.1"))
+        expect(lowest_security_fix_version).to eq(Dependabot::Shards::Version.new("0.10.1"))
       end
     end
 
@@ -177,7 +176,7 @@ RSpec.describe Dependabot::Shards::UpdateChecker do
       let(:ignored_versions) { ["= 0.10.1"] }
 
       it "doesn't return ignored versions" do
-        expect(lowest_security_fix_version).to eq(Dependabot::Swift::Version.new("0.11.0"))
+        expect(lowest_security_fix_version).to eq(Dependabot::Shards::Version.new("0.11.0"))
       end
     end
   end

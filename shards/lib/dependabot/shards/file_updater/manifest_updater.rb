@@ -21,7 +21,7 @@ module Dependabot
 
           @new_requirements.each do |new|
             updated_content = Utils.update_dep_version(updated_content, new[:groups], @dependency_name,
-                                                       new[:requirement])
+                                                       new[:requirement].to_s)
           end
 
           updated_content
