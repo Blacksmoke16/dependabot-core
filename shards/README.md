@@ -1,4 +1,4 @@
-## `dependabot-hex`
+## `dependabot-shards`
 
 Crystal (shards) support for [`dependabot-core`][core-repo].
 
