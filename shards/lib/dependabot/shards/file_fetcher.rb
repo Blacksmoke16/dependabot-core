@@ -35,6 +35,8 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
+        return [] unless allow_beta_ecosystems?
+
         fetched_files = []
         fetched_files << shard_yml
         fetched_files << lockfile if lockfile

@@ -10,6 +10,9 @@ require "dependabot/git_commit_checker"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/shards/package_manager"
+require "dependabot/shards/requirement"
+require "dependabot/shards/language"
+require "dependabot/ecosystem"
 
 module Dependabot
   module Shards
@@ -88,7 +91,7 @@ module Dependabot
         # If a shard does not specify a tag, version, commit, path, or branch
         # the default behavior is to treat it as unbound
         requirement = if %w(tag version commit path branch).none? { |k| attributes.key?(k) }
-                        Requirement.new("*").to_s
+                        Dependabot::Shards::Requirement.new("*").to_s
                       else
                         attributes["version"]
                       end
@@ -120,11 +123,17 @@ module Dependabot
 
       sig { params(name: String, version: String).returns(Dependabot::Dependency) }
       def build_lockfile_dependency(name, version)
+        # Determine if this transitive dependency is production or development
+        production = production_dependency?(name)
+
         Dependency.new(
           name: name,
           version: version,
           requirements: [],
-          package_manager: PackageManager::NAME
+          package_manager: PackageManager::NAME,
+          subdependency_metadata: [{
+            production: production
+          }]
         )
       end
 
@@ -219,6 +228,24 @@ module Dependabot
         parsed_lockfile&.dig("shards", name)
       end
 
+      sig { params(name: String).returns(T::Boolean) }
+      def production_dependency?(name)
+        # Check if this dependency is listed in the runtime dependencies section
+        runtime_deps = parsed_shard_yaml.dig("dependencies")&.keys || []
+        
+        # If it's directly listed as a runtime dependency, it's production
+        return true if runtime_deps.include?(name)
+        
+        # If it's directly listed as a development dependency, it's not production
+        dev_deps = parsed_shard_yaml.dig("development_dependencies")&.keys || []
+        return false if dev_deps.include?(name)
+        
+        # For transitive dependencies, check if any of their parent dependencies are production
+        # This is a simplified approach - a more sophisticated version would recursively
+        # trace the dependency tree, but for now we'll default to production
+        true
+      end
+
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
         @package_manager ||= T.let(
@@ -234,7 +261,7 @@ module Dependabot
 
         requirement =
           if (req = parsed_shard_yaml["crystal"])
-            Requirement.new req
+            Dependabot::Shards::Requirement.new req
           end
 
         Language.new(

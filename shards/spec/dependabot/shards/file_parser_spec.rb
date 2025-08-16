@@ -330,7 +330,7 @@ RSpec.describe Dependabot::Shards::FileParser do
 
         it "parses the details correctly" do
           expect(subdep.version).to eq("0.13.1")
-          expect(subdep.subdependency_metadata).to be_nil
+          expect(subdep.subdependency_metadata).to eq([{ production: true }])
         end
       end
 
@@ -341,7 +341,7 @@ RSpec.describe Dependabot::Shards::FileParser do
 
         it "parses the details correctly" do
           expect(subdep.version).to eq("0.2.4")
-          expect(subdep.subdependency_metadata).to be_nil
+          expect(subdep.subdependency_metadata).to eq([{ production: true }])
         end
       end
     end
@@ -374,4 +374,33 @@ RSpec.describe Dependabot::Shards::FileParser do
       end
     end
   end
+
+  describe "subdependency metadata" do
+    context "with transitive_dependencies project" do
+      let(:project_name) { "transitive_dependencies" }
+      let(:dependencies) { parser.parse }
+      
+      subject(:transitive_dependencies) { dependencies.reject(&:top_level?) }
+
+      it "creates transitive dependencies with subdependency_metadata" do
+        expect(transitive_dependencies).not_to be_empty
+        
+        transitive_dependencies.each do |dep|
+          expect(dep.subdependency_metadata).not_to be_empty
+          expect(dep.subdependency_metadata.first).to have_key(:production)
+          expect([true, false]).to include(dep.subdependency_metadata.first[:production])
+        end
+      end
+
+      it "marks production transitive dependencies correctly" do
+        # Dependencies of runtime dependencies should be marked as production
+        production_transitive = transitive_dependencies.select do |dep|
+          dep.subdependency_metadata.first[:production]
+        end
+        
+        expect(production_transitive).not_to be_empty
+      end
+    end
+  end
+
 end

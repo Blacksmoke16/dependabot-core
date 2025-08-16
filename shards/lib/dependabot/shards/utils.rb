@@ -32,21 +32,30 @@ module Dependabot
                      "\\1#{new_version}")
       end
 
-      sig { params(cmd: String, fingerprint: T.nilable(String)).returns(String) }
-      def self.run_shards_command(cmd, fingerprint: nil)
-        run_command("shards #{cmd}", fingerprint: fingerprint)
+      sig { params(cmd: String, fingerprint: T.nilable(String), allow_failure: T::Boolean).returns(String) }
+      def self.run_shards_command(cmd, fingerprint: nil, allow_failure: false)
+        run_command("shards #{cmd}", fingerprint: fingerprint, allow_failure: allow_failure)
       end
 
       sig { params(cmd: String, fingerprint: T.nilable(String)).returns(String) }
       def self.run_crystal_command(cmd, fingerprint: nil)
-        run_command("crystal #{cmd}", fingerprint: fingerprint)
+        run_command("crystal #{cmd}", fingerprint: fingerprint, allow_failure: false)
       end
 
-      sig { params(cmd: String, fingerprint: T.nilable(String)).returns(String) }
-      def self.run_command(cmd, fingerprint: nil)
+      sig { params(cmd: String, fingerprint: T.nilable(String), allow_failure: T::Boolean).returns(String) }
+      def self.run_command(cmd, fingerprint: nil, allow_failure: false)
         Dependabot.logger.info("Running command: `#{cmd}`")
 
-        SharedHelpers.run_shell_command(cmd, fingerprint: fingerprint)
+        if allow_failure
+          begin
+            SharedHelpers.run_shell_command(cmd, fingerprint: fingerprint)
+          rescue StandardError => e
+            Dependabot.logger.debug("Command failed with allow_failure=true: #{e.message}")
+            ""
+          end
+        else
+          SharedHelpers.run_shell_command(cmd, fingerprint: fingerprint)
+        end
       end
 
       private_class_method :run_command

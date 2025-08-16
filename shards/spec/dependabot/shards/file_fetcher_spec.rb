@@ -29,6 +29,8 @@ RSpec.describe Dependabot::Shards::FileFetcher do
 
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+    allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_beta_ecosystems).and_return(true)
 
     stub_request(:get, url + "?ref=sha")
       .with(headers: { "Authorization" => "token token" })

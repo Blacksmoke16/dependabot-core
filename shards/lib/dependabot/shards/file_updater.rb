@@ -24,11 +24,13 @@ module Dependabot
         SharedHelpers.in_a_temporary_repo_directory(manifest.directory, repo_contents_path) do
           updated_manifest = nil
 
-          if file_changed?(manifest)
+          # Only update manifest for top-level dependencies
+          if dependency.top_level? && file_changed?(manifest)
             updated_manifest = updated_file(file: manifest, content: updated_manifest_content)
             updated_files << updated_manifest
           end
 
+          # Always update lockfile (for both direct and transitive dependencies)
           updated_files << updated_file(file: lockfile, content: updated_lockfile_content(updated_manifest)) if lockfile
         end
 

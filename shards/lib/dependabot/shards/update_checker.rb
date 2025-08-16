@@ -17,6 +17,7 @@ module Dependabot
 
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_resolver"
+      require_relative "update_checker/subdependency_version_resolver"
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
@@ -61,6 +62,11 @@ module Dependabot
       def fetch_latest_version
         return if path_dependency?
 
+        # For transitive dependencies without source details, extract from lockfile
+        unless dependency_source_details
+          return fetch_latest_version_for_transitive_dependency
+        end
+
         # Shards is a bit unique in that it's entirely git/VCS based.
         # As such we can't rely on `git_commit_checker.pinned?` since there
         # will not be a `ref` in the happy path of using a `version` requirement.
@@ -84,10 +90,16 @@ module Dependabot
       end
 
       def fetch_latest_resolvable_version
-        latest_resolvable_version = version_resolver_for(unlocked_requirements).latest_resolvable_version
-        return current_version unless latest_resolvable_version
+        # Handle transitive dependencies differently
+        if dependency.top_level?
+          latest_resolvable_version = version_resolver_for(unlocked_requirements).latest_resolvable_version
+          return current_version unless latest_resolvable_version
 
-        Version.new(latest_resolvable_version)
+          Version.new(latest_resolvable_version)
+        else
+          # For transitive dependencies, use subdependency resolver
+          subdependency_version_resolver.latest_resolvable_version
+        end
       end
 
       def fetch_lowest_resolvable_security_fix_version
@@ -183,6 +195,92 @@ module Dependabot
           repo_contents_path: repo_contents_path,
           credentials: credentials
         )
+      end
+
+      def subdependency_version_resolver
+        @subdependency_version_resolver ||= SubdependencyVersionResolver.new(
+          dependency: dependency,
+          credentials: credentials,
+          dependency_files: dependency_files,
+          ignored_versions: ignored_versions,
+          latest_allowable_version: latest_version,
+          repo_contents_path: repo_contents_path
+        )
+      end
+
+      def fetch_latest_version_for_transitive_dependency
+        # Get source details from lockfile for transitive dependencies
+        lockfile_source = extract_source_from_lockfile
+        return dependency.version unless lockfile_source
+
+        # Create a temporary dependency with source details for git commit checking
+        temp_dependency = Dependency.new(
+          name: dependency.name,
+          version: dependency.version,
+          requirements: [{
+            requirement: nil,
+            file: "shard.lock",
+            source: lockfile_source,
+            groups: ["runtime"]
+          }],
+          package_manager: dependency.package_manager
+        )
+
+        # Use git commit checker to find the actual latest version
+        temp_git_checker = Dependabot::GitCommitChecker.new(
+          dependency: temp_dependency,
+          credentials: credentials,
+          ignored_versions: ignored_versions,
+          raise_on_ignored: raise_on_ignored
+        )
+
+        # Get the latest tag version
+        latest_tag = temp_git_checker.local_tag_for_latest_version
+        return dependency.version unless latest_tag
+        
+        version = latest_tag.fetch(:version)
+        version.respond_to?(:to_s) ? version.to_s : version
+      rescue StandardError => e
+        Dependabot.logger.debug("Failed to fetch latest version for transitive dependency: #{e.message}")
+        dependency.version
+      end
+
+      def extract_source_from_lockfile
+        lockfile = dependency_files.find { |f| f.name == "shard.lock" }
+        return unless lockfile
+
+        parsed_lockfile = YAML.safe_load(lockfile.content)
+        details = parsed_lockfile&.dig("shards", dependency.name)
+        return unless details
+
+        git_url = details["git"]
+        return unless git_url
+
+        {
+          type: "git",
+          url: git_url,
+          branch: nil,
+          ref: nil
+        }
+      rescue StandardError => e
+        Dependabot.logger.debug("Failed to extract source from lockfile: #{e.message}")
+        nil
+      end
+
+      def file_parser
+        @file_parser ||= begin
+          require "dependabot/shards/file_parser"
+          # Create a minimal source object for the file parser
+          temp_source = Dependabot::Source.new(
+            provider: "github",
+            repo: "temp/repo",
+            directory: T.must(dependency_files.first).directory
+          )
+          Dependabot::Shards::FileParser.new(
+            dependency_files: dependency_files,
+            source: temp_source
+          )
+        end
       end
 
       sig { returns(Dependabot::GitCommitChecker) }
