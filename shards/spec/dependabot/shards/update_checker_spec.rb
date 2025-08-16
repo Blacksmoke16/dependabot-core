@@ -211,4 +211,57 @@ RSpec.describe Dependabot::Shards::UpdateChecker do
       end
     end
   end
+
+  describe "#unlocked_requirements" do
+    subject(:unlocked_requirements) { checker.send(:unlocked_requirements) }
+
+    context "when dependency has a version" do
+      let(:project_name) { "simple" }
+      let(:name) { "db" }
+
+      it "returns requirements with >= current version" do
+        expect(unlocked_requirements).to be_an(Array)
+        expect(unlocked_requirements.first).to include(requirement: ">= #{dependency.version}")
+      end
+    end
+
+    context "when dependency has no version (no lockfile scenario)" do
+      let(:project_name) { "simple" }
+      let(:name) { "db" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: name,
+          version: nil,
+          requirements: [
+            {
+              requirement: "~> 0.10.0",
+              groups: [],
+              file: "shard.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/crystal-lang/crystal-db.git",
+                ref: "0.10.0",
+                branch: nil
+              }
+            }
+          ],
+          package_manager: "shards"
+        )
+      end
+
+      it "returns requirements with wildcard (*) when version is nil" do
+        expect(unlocked_requirements).to be_an(Array)
+        expect(unlocked_requirements.first).to include(requirement: "*")
+      end
+
+      it "preserves other requirement properties" do
+        unlocked_req = unlocked_requirements.first
+        original_req = dependency.requirements.first
+
+        expect(unlocked_req[:groups]).to eq(original_req[:groups])
+        expect(unlocked_req[:file]).to eq(original_req[:file])
+        expect(unlocked_req[:source]).to eq(original_req[:source])
+      end
+    end
+  end
 end
