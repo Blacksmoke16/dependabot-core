@@ -27,7 +27,8 @@ module Dependabot
             dependency: dependency,
             manifest: manifest,
             repo_contents_path: repo_contents_path,
-            credentials: credentials
+            credentials: credentials,
+            allow_error: false
           ).updated_lockfile_content
 
           return if lockfile && updated_lockfile_content == lockfile.content

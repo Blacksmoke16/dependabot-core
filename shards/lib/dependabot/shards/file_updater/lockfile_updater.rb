@@ -14,11 +14,12 @@ module Dependabot
 
         require_relative "../utils"
 
-        def initialize(dependency:, manifest:, repo_contents_path:, credentials:)
+        def initialize(dependency:, manifest:, repo_contents_path:, credentials:, allow_error: true)
           @dependency = dependency
           @manifest = manifest
           @repo_contents_path = repo_contents_path
           @credentials = credentials
+          @allow_error = allow_error
         end
 
         sig { returns(String) }
@@ -52,6 +53,7 @@ module Dependabot
           # certain situations and will result in `no_update_possible` outcomes.
           # That said, since we're swallowing all errors we at least log them to ease debugging.
           Dependabot.logger.info("Lockfile failed to be updated due to error:\n#{e.message}")
+          raise e unless @allow_error
         end
 
         attr_reader :dependency

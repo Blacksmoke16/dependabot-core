@@ -237,7 +237,7 @@ module Dependabot
         # Get the latest tag version
         latest_tag = temp_git_checker.local_tag_for_latest_version
         return dependency.version unless latest_tag
-        
+
         version = latest_tag.fetch(:version)
         version.respond_to?(:to_s) ? version.to_s : version
       rescue StandardError => e
