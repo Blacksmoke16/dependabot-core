@@ -25,7 +25,6 @@
 # - composer
 # - conda
 # - devcontainers
-<<<<<<< HEAD
 # - docker
 # - docker_compose
 # - dotnet_sdk

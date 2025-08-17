@@ -1,10 +1,9 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 
-ARG CRYSTAL_VERSION=1.17.0-475
+ARG CRYSTAL_VERSION=1.17
 
 # TODO: Maybe just install shards itself
-RUN curl -s https://packagecloud.io/install/repositories/84codes/crystal/script.deb.sh | bash \
-  && apt-get install -y crystal=${CRYSTAL_VERSION}
+RUN curl -fsSL https://crystal-lang.org/install.sh | bash -s -- --version=$CRYSTAL_VERSION
 
 USER dependabot
 
