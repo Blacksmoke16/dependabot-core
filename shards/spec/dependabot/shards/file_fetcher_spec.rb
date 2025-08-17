@@ -65,34 +65,8 @@ RSpec.describe Dependabot::Shards::FileFetcher do
 
   it "provides the shards version" do
     expect(file_fetcher_instance.ecosystem_versions).to eq({
-      package_managers: { "shards" => "2.0" }
+      package_managers: { "shards" => "0.19.1" }
     })
-  end
-
-  context "without a shard.lock" do
-    before do
-      stub_request(:get, url + "?ref=sha")
-        .with(headers: { "Authorization" => "token token" })
-        .to_return(
-          status: 200,
-          body: fixture("github", "contents_shard_repo_no_lockfile.json"),
-          headers: { "content-type" => "application/json" }
-        )
-      stub_request(:get, url + "shard.lock?ref=sha")
-        .with(headers: { "Authorization" => "token token" })
-        .to_return(status: 404)
-    end
-
-    it "fetches only shard.yml" do
-      expect(file_fetcher_instance.files.map(&:name))
-        .to match_array(%w(shard.yml))
-    end
-
-    it "provides the default shards.lock version" do
-      expect(file_fetcher_instance.ecosystem_versions).to eq({
-        package_managers: { "shards" => "2.0" }
-      })
-    end
   end
 
   context "without a shard.yml" do

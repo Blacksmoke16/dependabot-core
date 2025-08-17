@@ -28,7 +28,7 @@ module Dependabot
       def ecosystem_versions
         {
           package_managers: {
-            PackageManager::NAME => parsed_lockfile&.[]("version")&.to_s || "2.0"
+            PackageManager::NAME => Utils.shards_version
           }
         }
       end

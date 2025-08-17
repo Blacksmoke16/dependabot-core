@@ -249,7 +249,7 @@ module Dependabot
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
         @package_manager ||= T.let(
-          PackageManager.new(T.must(shards_version)),
+          PackageManager.new(T.must(Utils.shards_version)),
           T.nilable(Dependabot::Shards::PackageManager)
         )
       end
@@ -267,17 +267,6 @@ module Dependabot
         Language.new(
           version,
           requirement: requirement
-        )
-      end
-
-      sig { returns(T.nilable(String)) }
-      def shards_version
-        @shards_version ||= T.let(
-          begin
-            version = Utils.run_shards_command("--version")
-            version.match(Dependabot::Ecosystem::VersionManager::DEFAULT_VERSION_PATTERN)&.captures&.first
-          end,
-          T.nilable(String)
         )
       end
 

@@ -42,6 +42,17 @@ module Dependabot
         run_command("crystal #{cmd}", fingerprint: fingerprint, allow_failure: false)
       end
 
+      sig { returns(T.nilable(String)) }
+      def self.shards_version
+        @shards_version ||= T.let(
+          begin
+            version = run_shards_command("--version")
+            version.match(Dependabot::Ecosystem::VersionManager::DEFAULT_VERSION_PATTERN)&.captures&.first
+          end,
+          T.nilable(String)
+        )
+      end
+
       sig { params(cmd: String, fingerprint: T.nilable(String), allow_failure: T::Boolean).returns(String) }
       def self.run_command(cmd, fingerprint: nil, allow_failure: false)
         Dependabot.logger.info("Running command: `#{cmd}`")
