@@ -1,0 +1,18 @@
+{
+  "name": "shard.lock",
+  "path": "shard.lock",
+  "sha": "99b4ef96e7202a97c184305e5bf7d95f0dcc2113",
+  "size": 117,
+  "url": "https://api.github.com/repos/crystal-lang/shards/contents/shard.lock?ref=master",
+  "html_url": "https://github.com/crystal-lang/shards/blob/master/shard.lock",
+  "git_url": "https://api.github.com/repos/crystal-lang/shards/git/blobs/99b4ef96e7202a97c184305e5bf7d95f0dcc2113",
+  "download_url": "https://raw.githubusercontent.com/crystal-lang/shards/master/shard.lock",
+  "type": "file",
+  "content": "dmVyc2lvbjogMi4wCnNoYXJkczoKICBtb2xpbmlsbG86CiAgICBnaXQ6IGh0\ndHBzOi8vZ2l0aHViLmNvbS9jcnlzdGFsLWxhbmcvY3J5c3RhbC1tb2xpbmls\nbG8uZ2l0CiAgICB2ZXJzaW9uOiAwLjIuMAoK\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/crystal-lang/shards/contents/shard.lock?ref=master",
+    "git": "https://api.github.com/repos/crystal-lang/shards/git/blobs/99b4ef96e7202a97c184305e5bf7d95f0dcc2113",
+    "html": "https://github.com/crystal-lang/shards/blob/master/shard.lock"
+  }
+}

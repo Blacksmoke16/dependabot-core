@@ -1,0 +1,18 @@
+{
+  "name": "shard.yml",
+  "path": "shard.yml",
+  "sha": "ab888d65c57b9c8543910037551025923211902a",
+  "size": 250,
+  "url": "https://api.github.com/repos/crystal-lang/shards/contents/shard.yml?ref=master",
+  "html_url": "https://github.com/crystal-lang/shards/blob/master/shard.yml",
+  "git_url": "https://api.github.com/repos/crystal-lang/shards/git/blobs/ab888d65c57b9c8543910037551025923211902a",
+  "download_url": "https://raw.githubusercontent.com/crystal-lang/shards/master/shard.yml",
+  "type": "file",
+  "content": "bmFtZTogc2hhcmRzCnZlcnNpb246IDAuMTguMAoKYXV0aG9yczoKICAtIEp1\nbGllbiBQb3J0YWxpZXIgPGp1bGllbkBwb3J0YWxpZXIuY29tPgoKZGVwZW5k\nZW5jaWVzOgogIG1vbGluaWxsbzoKICAgIGdpdGh1YjogY3J5c3RhbC1sYW5n\nL2NyeXN0YWwtbW9saW5pbGxvCgp0YXJnZXRzOgogIHNoYXJkczoKICAgIG1h\naW46IHNyYy9zaGFyZHMuY3IKCmNyeXN0YWw6ICI+PSAwLjM1LjAsIDwgMi4w\nLjAiCgpsaWNlbnNlOiBBcGFjaGUtMi4wCg==\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/crystal-lang/shards/contents/shard.yml?ref=master",
+    "git": "https://api.github.com/repos/crystal-lang/shards/git/blobs/ab888d65c57b9c8543910037551025923211902a",
+    "html": "https://github.com/crystal-lang/shards/blob/master/shard.yml"
+  }
+}

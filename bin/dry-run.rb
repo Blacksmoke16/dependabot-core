@@ -43,6 +43,7 @@
 # - swift
 # - terraform
 # - vcpkg
+# - shards
 
 # rubocop:disable Style/GlobalVars
 
@@ -81,8 +82,10 @@ $LOAD_PATH << "./python/lib"
 $LOAD_PATH << "./rust_toolchain/lib"
 $LOAD_PATH << "./swift/lib"
 $LOAD_PATH << "./terraform/lib"
+$LOAD_PATH << "./shards/lib"
 $LOAD_PATH << "./uv/lib"
 $LOAD_PATH << "./vcpkg/lib"
+$LOAD_PATH << "./shards/lib"
 
 updater_image_gemfile = File.expand_path("../dependabot-updater/Gemfile", __dir__)
 updater_repo_gemfile = File.expand_path("../updater/Gemfile", __dir__)
@@ -129,6 +132,7 @@ require "dependabot/hex"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
+require "dependabot/shards"
 require "dependabot/pub"
 require "dependabot/python"
 require "dependabot/swift"
@@ -359,6 +363,7 @@ valid_package_managers = %w(
   pub
   python
   rust_toolchain
+  shards
   swift
   terraform
   uv

@@ -1,0 +1,7 @@
+name: shards
+version: 0.1.0
+
+dependencies:
+  db:
+    github: crystal-lang/crystal-db
+    commit: 1d0105ffeb1f983fafdda7ec2fd68916f74b4a4c

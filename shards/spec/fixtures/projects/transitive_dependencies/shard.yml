@@ -1,0 +1,12 @@
+name: test_app
+version: 0.1.0
+
+dependencies:
+  athena:
+    github: athena-framework/framework
+    version: ~> 0.20.0
+
+development_dependencies:
+  ameba:
+    github: crystal-ameba/ameba
+    version: ~> 1.6.0

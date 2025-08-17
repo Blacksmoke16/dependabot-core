@@ -1,0 +1,6 @@
+name: shards
+version: 0.1.0
+
+dependencies:
+  svn:
+    svn: svn://127.0.0.1/home/user/svn/MyProject

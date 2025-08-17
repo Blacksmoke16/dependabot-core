@@ -83,6 +83,7 @@ jobs:
           - { name: terraform, ecosystem: terraform }
           - { name: uv, ecosystem: uv }
           - { name: vcpkg, ecosystem: vcpkg }
+          - { name: shards, ecosystem: shards }
     permissions:
       contents: read
       id-token: write

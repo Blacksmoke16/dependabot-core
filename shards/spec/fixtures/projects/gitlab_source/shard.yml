@@ -1,0 +1,7 @@
+name: shards
+version: 0.1.0
+
+dependencies:
+  spectator:
+    gitlab: arctic-fox/spectator
+    version: ~> 0.12.0

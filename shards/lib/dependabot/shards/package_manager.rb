@@ -1,0 +1,48 @@
+# typed: strong
+# frozen_string_literal: true
+
+require "sorbet-runtime"
+
+require "dependabot/ecosystem"
+require "dependabot/shards/version"
+
+module Dependabot
+  module Shards
+    ECOSYSTEM = "crystal"
+
+    class PackageManager < Dependabot::Ecosystem::VersionManager
+      extend T::Sig
+
+      NAME = "shards"
+
+      # https://github.com/crystal-lang/shards/issues/279
+      MANIFEST_FILENAME = "shard.yml"
+      LOCKFILE_FILENAME = "shard.lock"
+
+      SUPPORTED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+
+      # When a version is going to be unsupported, it will be added here
+      DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+
+      sig { params(raw_version: String).void }
+      def initialize(raw_version)
+        super(
+          name: NAME,
+          version: Version.new(raw_version),
+          supported_versions: SUPPORTED_VERSIONS,
+          deprecated_versions: DEPRECATED_VERSIONS
+       )
+      end
+
+      sig { override.returns(T::Boolean) }
+      def deprecated?
+        false
+      end
+
+      sig { override.returns(T::Boolean) }
+      def unsupported?
+        false
+      end
+    end
+  end
+end
