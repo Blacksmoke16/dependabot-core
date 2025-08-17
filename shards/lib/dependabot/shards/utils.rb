@@ -44,7 +44,7 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def self.shards_version
-        @shards_version ||= T.let(
+        @@shards_version ||= T.let(
           begin
             version = run_shards_command("--version")
             version.match(Dependabot::Ecosystem::VersionManager::DEFAULT_VERSION_PATTERN)&.captures&.first
